@@ -69,6 +69,21 @@ class EmployeeProvider extends ChangeNotifier {
       }
     }
   }
+  // --- ACTUALIZAR LOCALMENTE (SOLO UI) ---
+  void updateEmployeeLocal(Employee updatedEmployee) {
+    final index = _allEmployees.indexWhere((e) => e.id == updatedEmployee.id);
+    if (index != -1) {
+      _allEmployees[index] = updatedEmployee;
+      
+      final filterIndex = _filteredEmployees.indexWhere((e) => e.id == updatedEmployee.id);
+      if (filterIndex != -1) {
+        _filteredEmployees[filterIndex] = updatedEmployee;
+      }
+      
+      // Notificamos para que la tabla se redibuje con el nuevo nombre/cargo
+      notifyListeners();
+    }
+  }
 
   void search(String query) {
     if (query.isEmpty) {

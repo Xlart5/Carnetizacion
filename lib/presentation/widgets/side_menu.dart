@@ -28,14 +28,28 @@ class SideMenu extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white, 
-                    borderRadius: BorderRadius.circular(12)
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.how_to_vote, color: AppColors.primaryDark, size: 32),
+                  child: const Icon(
+                    Icons.how_to_vote,
+                    color: AppColors.primaryDark,
+                    size: 32,
+                  ),
                 ),
                 const SizedBox(height: 15),
-                const Text("SISTEMA TED", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
-                const Text("Gestión Electoral", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                const Text(
+                  "SISTEMA TED",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+                const Text(
+                  "Gestión Electoral",
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
               ],
             ),
           ),
@@ -58,11 +72,11 @@ class SideMenu extends StatelessWidget {
                 ),
                 _DrawerItem(
                   icon: Icons.person_add_alt_1_outlined,
-                  text: "Registro Personal",
-                  isActive: location == '/registro',
+                  text: "Gestionar Unidades/Cargos",
+                  isActive: location == '/Unidades',
                   onTap: () {
                     Navigator.pop(context);
-                    context.go('/registro');
+                    context.go('/Unidades');
                   },
                 ),
                 _DrawerItem(
@@ -93,12 +107,19 @@ class SideMenu extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                Icon(Icons.verified_user_outlined, size: 16, color: Colors.grey[400]),
+                Icon(
+                  Icons.verified_user_outlined,
+                  size: 16,
+                  color: Colors.grey[400],
+                ),
                 const SizedBox(width: 10),
-                Text("Admin Verificado", style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                Text(
+                  "Admin Verificado",
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -111,7 +132,12 @@ class _DrawerItem extends StatelessWidget {
   final bool isActive;
   final VoidCallback onTap;
 
-  const _DrawerItem({required this.icon, required this.text, required this.isActive, required this.onTap});
+  const _DrawerItem({
+    required this.icon,
+    required this.text,
+    required this.isActive,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -122,8 +148,17 @@ class _DrawerItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        leading: Icon(icon, color: isActive ? AppColors.textDark : Colors.grey[600]),
-        title: Text(text, style: TextStyle(color: isActive ? AppColors.textDark : Colors.grey[700], fontWeight: isActive ? FontWeight.bold : FontWeight.w500)),
+        leading: Icon(
+          icon,
+          color: isActive ? AppColors.textDark : Colors.grey[600],
+        ),
+        title: Text(
+          text,
+          style: TextStyle(
+            color: isActive ? AppColors.textDark : Colors.grey[700],
+            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20),
