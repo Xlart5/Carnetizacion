@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:printing/printing.dart'; // Asegúrate de tener este import
 import 'package:pdf/pdf.dart';
 
-
 import '../../config/theme/app_colors.dart';
 import '../../config/helpers/pdf_generator_service.dart';
 import '../../config/models/employee_model.dart'; // Importante para el tipo Employee
@@ -38,61 +37,88 @@ class PrintScreen extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Impresión de Credenciales", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
-                    Text("Revisión final de ${pendingList.length} credenciales pendientes.", style: const TextStyle(color: Colors.grey)),
+                    const Text(
+                      "Impresión de Credenciales",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                    Text(
+                      "Revisión final de ${pendingList.length} credenciales pendientes.",
+                      style: const TextStyle(color: Colors.grey),
+                    ),
                   ],
                 ),
                 const Spacer(),
-                
+
                 // BOTÓN IMPRIMIR
                 ElevatedButton.icon(
-                  onPressed: pendingList.isEmpty ? null : () async {
-                    // 1. Notificar al usuario
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Generando PDF..."))
-                    );
+                  onPressed: pendingList.isEmpty
+                      ? null
+                      : () async {
+                          // 1. Notificar al usuario
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Generando PDF...")),
+                          );
 
-                    try {
-                      // 2. Generar el PDF
-                      final pdfBytes = await PdfGeneratorService.generateCredentialsPdf(pendingList);
-                      
-                      // 3. Abrir la vista previa de impresión
-                      await Printing.layoutPdf(
-                        onLayout: (PdfPageFormat format) async => pdfBytes,
-                        name: 'Credenciales_Lote_${DateTime.now().millisecond}',
-                      );
+                          try {
+                            // 2. Generar el PDF
+                            final pdfBytes =
+                                await PdfGeneratorService.generateCredentialsPdf(
+                                  pendingList,
+                                );
 
-                      // 4. ACTUALIZAR ESTADO EN BD
-                      // Hacemos una copia de la lista porque al actualizar se borrarán de 'pendingList'
-                      final listToUpdate = List<Employee>.from(pendingList);
-                      final readProvider = context.read<EmployeeProvider>();
+                            // 3. Abrir la vista previa de impresión
+                            await Printing.layoutPdf(
+                              onLayout: (PdfPageFormat format) async =>
+                                  pdfBytes,
+                              name:
+                                  'Credenciales_Lote_${DateTime.now().millisecond}',
+                            );
 
-                      for (final emp in listToUpdate) {
-                        // Llamamos a la API para cada empleado impreso
-                        readProvider.markAsPrinted(emp);
-                      }
+                            // 4. ACTUALIZAR ESTADO EN BD
+                            // Hacemos una copia de la lista porque al actualizar se borrarán de 'pendingList'
+                            final listToUpdate = List<Employee>.from(
+                              pendingList,
+                            );
+                            final readProvider = context
+                                .read<EmployeeProvider>();
 
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("¡Listo! Registros marcados como IMPRESOS."),
-                            backgroundColor: Colors.green,
-                          )
-                        );
-                      }
-                      
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
-                      );
-                    }
-                  },
+                            for (final emp in listToUpdate) {
+                              // Llamamos a la API para cada empleado impreso
+                              await readProvider.markAsPrinted(emp);
+                            }
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "¡Listo! Registros marcados como IMPRESOS.",
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Error: $e"),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
                   icon: const Icon(Icons.print, size: 18),
                   label: const Text("Imprimir Lote"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryYellow,
                     foregroundColor: AppColors.textDark,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 18),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 18,
+                    ),
                   ),
                 ),
               ],
@@ -101,32 +127,40 @@ class PrintScreen extends StatelessWidget {
 
           // GRID DE CREDENCIALES
           Expanded(
-            child: pendingList.isEmpty 
-            ? const Center(child: Text("No hay credenciales pendientes de impresión."))
-            : Padding(
-              padding: const EdgeInsets.all(40.0),
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 400, 
-                  mainAxisExtent: 250,    
-                  crossAxisSpacing: 30,
-                  mainAxisSpacing: 30,
-                ),
-                itemCount: pendingList.length,
-                itemBuilder: (context, index) {
-                  final emp = pendingList[index];
-                  return Column(
-                    children: [
-                      Expanded(
-                        child: CredentialCard(employee: emp, )
-                      ),
-                      const SizedBox(height: 10),
-                      Text(emp.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12), overflow: TextOverflow.ellipsis),
-                    ],
-                  );
-                },
-              ),
-            ),
+            child: pendingList.isEmpty
+                ? const Center(
+                    child: Text("No hay credenciales pendientes de impresión."),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(40.0),
+                    child: GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 400,
+                            mainAxisExtent: 250,
+                            crossAxisSpacing: 30,
+                            mainAxisSpacing: 30,
+                          ),
+                      itemCount: pendingList.length,
+                      itemBuilder: (context, index) {
+                        final emp = pendingList[index];
+                        return Column(
+                          children: [
+                            Expanded(child: CredentialCard(employee: emp)),
+                            const SizedBox(height: 10),
+                            Text(
+                              emp.nombreCompleto,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),

@@ -1,6 +1,8 @@
+import 'package:carnetizacion/config/provider/employee_provider.dart';
 import 'package:carnetizacion/presentation/widgets/edit_employee_sheet.dart';
 import 'package:carnetizacion/presentation/widgets/view_employee_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 // Importante para la navegación si usas editar
 import '../../config/models/employee_model.dart';
 
@@ -193,7 +195,9 @@ class EmployeeDataSource extends DataTableSource {
               _ActionButton(
                 icon: Icons.delete_outline,
                 color: Colors.red,
-                onTap: () => _confirmDelete(emp),
+                onTap: () {
+                  _mostrarDialogoEliminar(context, emp);
+                },
               ),
             ],
           ),
@@ -252,4 +256,63 @@ class EmployeeDataSource extends DataTableSource {
   int get rowCount => employees.length;
   @override
   int get selectedRowCount => 0;
+}
+
+void _mostrarDialogoEliminar(BuildContext context, Employee emp) {
+  showDialog(
+    context: context,
+    builder: (BuildContext ctx) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.redAccent,
+              size: 28,
+            ),
+            SizedBox(width: 10),
+            Text("Eliminar Personal"),
+          ],
+        ),
+        content: Text(
+          "¿Estás seguro de que deseas eliminar a ${emp.nombre}? Esta acción es permanente y no se puede deshacer.",
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(), // Cierra sin hacer nada
+            child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () async {
+              Navigator.of(ctx).pop(); // Cerramos el diálogo primero
+
+              // Llamamos al Provider para borrarlo en la BD
+              final provider = context.read<EmployeeProvider>();
+              bool success = await provider.deleteEmployee(emp.id);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? "Personal eliminado correctamente."
+                          : "Error al eliminar. Intente de nuevo.",
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              "Sí, Eliminar",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }

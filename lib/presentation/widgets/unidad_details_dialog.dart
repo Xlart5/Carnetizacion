@@ -1,17 +1,13 @@
-import 'package:carnetizacion/presentation/widgets/add_cargo_sheet.dart';
+import 'package:carnetizacion/config/provider/unidades_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+// Asegúrate de que esta ruta coincida con la tuya
+import 'package:carnetizacion/presentation/widgets/add_cargo_sheet.dart';
+
 import '../../config/models/unidad_model.dart';
 
-// --- MODELO TEMPORAL PARA CARGOS (Solo para la UI) ---
-class CargoMock {
-  final String nombre;
-  final int cantidad;
-  final IconData icono;
-  CargoMock(this.nombre, this.cantidad, this.icono);
-}
-
 class UnidadDetailsDialog extends StatefulWidget {
-  final Unidad unidad;
+  final UnidadModel unidad; // Actualizado a nuestro nuevo modelo
 
   const UnidadDetailsDialog({super.key, required this.unidad});
 
@@ -20,18 +16,15 @@ class UnidadDetailsDialog extends StatefulWidget {
 }
 
 class _UnidadDetailsDialogState extends State<UnidadDetailsDialog> {
-  // Datos de prueba para la lista de cargos
-  final List<CargoMock> _cargos = [
-    CargoMock("Senior Fullstack Developer", 12, Icons.code),
-    CargoMock("Administrador de Redes", 4, Icons.storage),
-    CargoMock("Soporte Técnico Nivel 2", 25, Icons.support_agent),
-    CargoMock("Analista de Sistemas QA", 4, Icons.bug_report),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final colorEstado = widget.unidad.colorEstado;
-    final textoEstado = widget.unidad.estadoTexto;
+    // 1. Obtenemos los datos dinámicos desde el Provider
+    final provider = context.watch<UnidadesProvider>();
+    final cargos = provider.getCargosPorUnidad(widget.unidad.id);
+
+    // 2. Calculamos colores y textos basados en el estado real (true/false) de la BD
+    final colorEstado = widget.unidad.estado ? Colors.green : Colors.redAccent;
+    final textoEstado = widget.unidad.estado ? "ACTIVO" : "INACTIVO";
 
     // Usamos Dialog para que aparezca centrado y oscurezca el fondo
     return Dialog(
@@ -109,7 +102,7 @@ class _UnidadDetailsDialogState extends State<UnidadDetailsDialog> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  "PERSONAL REGISTRADO",
+                                  "CARGOS REGISTRADOS",
                                   style: TextStyle(
                                     color: Colors.white70,
                                     fontSize: 12,
@@ -119,7 +112,7 @@ class _UnidadDetailsDialogState extends State<UnidadDetailsDialog> {
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
-                                  "${widget.unidad.cantidadEmpleados}",
+                                  "${cargos.length}", // Cuenta automáticamente los cargos reales
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 42,
@@ -145,7 +138,7 @@ class _UnidadDetailsDialogState extends State<UnidadDetailsDialog> {
                       ),
                     ),
                     const SizedBox(width: 20),
-                    // Tarjeta Verde/Naranja (Estado)
+                    // Tarjeta Verde/Naranja/Rojo (Estado)
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.all(25),
@@ -187,7 +180,7 @@ class _UnidadDetailsDialogState extends State<UnidadDetailsDialog> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
-                                        widget.unidad.estado == 1
+                                        widget.unidad.estado
                                             ? Icons.check_circle
                                             : Icons.info,
                                         color: Colors.white,
@@ -233,17 +226,13 @@ class _UnidadDetailsDialogState extends State<UnidadDetailsDialog> {
                       ),
                     ),
                     TextButton.icon(
-                      // === AQUÍ CONECTAMOS EL BOTTOM SHEET ===
                       onPressed: () {
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
                           builder: (context) {
-                            return const Center(
-                              // Center lo mantiene con un ancho máximo estético
-                              child: AddCargoSheet(),
-                            );
+                            return const Center(child: AddCargoSheet());
                           },
                         );
                       },
@@ -258,7 +247,7 @@ class _UnidadDetailsDialogState extends State<UnidadDetailsDialog> {
                 ),
                 const SizedBox(height: 15),
 
-                // --- TABLA DE CARGOS (Diseño personalizado) ---
+                // --- TABLA DE CARGOS ---
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade200),
@@ -290,7 +279,7 @@ class _UnidadDetailsDialogState extends State<UnidadDetailsDialog> {
                               flex: 2,
                               child: Center(
                                 child: Text(
-                                  "CANTIDAD DE EMPLEADOS",
+                                  "CANTIDAD",
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -318,94 +307,113 @@ class _UnidadDetailsDialogState extends State<UnidadDetailsDialog> {
                       ),
                       const Divider(height: 1),
                       // Lista de filas
-                      ListView.separated(
-                        shrinkWrap: true, // Importante dentro de un Dialog
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _cargos.length,
-                        separatorBuilder: (context, index) =>
-                            Divider(height: 1, color: Colors.grey.shade200),
-                        itemBuilder: (context, index) {
-                          final cargo = _cargos[index];
-                          return Container(
-                            color: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 18,
-                            ),
-                            child: Row(
-                              children: [
-                                // Nombre del Cargo con icono
-                                Expanded(
-                                  flex: 3,
+                      cargos.isEmpty
+                          ? const Padding(
+                              padding: EdgeInsets.all(40.0),
+                              child: Center(
+                                child: Text(
+                                  "No hay cargos registrados",
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              shrinkWrap:
+                                  true, // Importante dentro de un Dialog
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: cargos.length, // Dinámico
+                              separatorBuilder: (context, index) => Divider(
+                                height: 1,
+                                color: Colors.grey.shade200,
+                              ),
+                              itemBuilder: (context, index) {
+                                final cargo = cargos[index];
+                                return Container(
+                                  color: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 18,
+                                  ),
                                   child: Row(
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.shade50,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          cargo.icono,
-                                          size: 16,
-                                          color: Colors.blue,
+                                      // Nombre del Cargo con icono
+                                      Expanded(
+                                        flex: 3,
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.shade50,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: const Icon(
+                                                Icons
+                                                    .work_outline, // Icono genérico real
+                                                size: 16,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 15),
+                                            Expanded(
+                                              child: Text(
+                                                cargo.nombre,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF2D3748),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(width: 15),
-                                      Text(
-                                        cargo.nombre,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF2D3748),
+                                      // Cantidad (Badge gris)
+                                      Expanded(
+                                        flex: 2,
+                                        child: Center(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade100,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: const Text(
+                                              "-", // La API actual de cargos no devuelve la cantidad exacta de empleados por cargo
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Acciones (Menú de tres puntos)
+                                      Expanded(
+                                        flex: 1,
+                                        child: Align(
+                                          alignment: Alignment.centerRight,
+                                          child: IconButton(
+                                            onPressed: () {},
+                                            icon: Icon(
+                                              Icons.more_horiz,
+                                              color: Colors.grey.shade400,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                                // Cantidad (Badge gris)
-                                Expanded(
-                                  flex: 2,
-                                  child: Center(
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade100,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(
-                                        "${cargo.cantidad}",
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // Acciones (Menú de tres puntos)
-                                Expanded(
-                                  flex: 1,
-                                  child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: IconButton(
-                                      onPressed: () {},
-                                      icon: Icon(
-                                        Icons.more_horiz,
-                                        color: Colors.grey.shade400,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ],
                   ),
                 ),

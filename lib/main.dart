@@ -1,6 +1,7 @@
 import 'package:carnetizacion/config/provider/auth_provider.dart';
 import 'package:carnetizacion/config/provider/employee_provider.dart';
 import 'package:carnetizacion/config/provider/register_provider.dart';
+import 'package:carnetizacion/config/provider/unidades_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,6 +28,7 @@ class MyApp extends StatelessWidget {
 
         // Provider para el Formulario de Registro (Nuevo empleado)
         ChangeNotifierProvider(create: (_) => RegisterProvider()),
+        ChangeNotifierProvider(create: (_) => UnidadesProvider()),
       ],
       child: MaterialApp.router(
         title: 'Control Central TED',

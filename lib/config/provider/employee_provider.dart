@@ -172,29 +172,40 @@ class EmployeeProvider extends ChangeNotifier {
   // =====================================
   // ACCIÓN DE IMPRIMIR CREDENCIALES
   // =====================================
-  void markAsPrinted(Employee emp) {
-    final index = _allEmployees.indexWhere((e) => e.id == emp.id);
-    if (index != -1) {
-      // Recreamos al empleado con su nuevo estado
-      _allEmployees[index] = Employee(
-        id: emp.id,
-        nombre: emp.nombre,
-        apellidoPaterno: emp.apellidoPaterno,
-        apellidoMaterno: emp.apellidoMaterno,
-        carnetIdentidad: emp.carnetIdentidad,
-        correo: emp.correo,
-        celular: emp.celular,
-        accesoComputo: emp.accesoComputo,
-        estadoActual: "CREDENCIAL IMPRESO", // <--- Lo pasamos a impreso
-        cargo: emp.cargo,
-        unidad: emp.unidad,
-        photoUrl: emp.photoUrl, qrUrl: emp.qrUrl,
+  // =====================================
+  // ACCIÓN DE IMPRIMIR CREDENCIALES (REAL A BD)
+  // =====================================
+  Future<bool> markAsPrinted(Employee emp) async {
+    try {
+      // 1. Armamos la URL con el ID del empleado
+      final url = Uri.parse('$_baseUrl/api/estados-personal/${emp.id}/imprimir-credencial');
+      
+      // 2. Hacemos la petición PUT al servidor
+      final response = await http.put(
+        url,
+        headers: {
+          'Accept': 'application/json',
+          // 'ngrok-skip-browser-warning': 'true' // Descomenta esto si vuelve a molestar el CORS
+        }
       );
 
-      // ⚠️ NOTA: Aquí a futuro deberías hacer un http.post o put a tu API
-      // para avisarle a la base de datos que este ID ya se imprimió.
-
-      _applyFilters();
+      // 3. Si el servidor responde OK (200), actualizamos la pantalla
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final index = _allEmployees.indexWhere((e) => e.id == emp.id);
+        if (index != -1) {
+          // Usamos copyWith para mantener todos sus datos y solo cambiar su estado visualmente
+          _allEmployees[index] = emp.copyWith(estadoActual: "CREDENCIAL IMPRESO");
+          _applyFilters();
+        }
+        return true; // Éxito
+      } else {
+        print('Error en BD al imprimir: ${response.statusCode}');
+        print('Respuesta: ${response.body}');
+        return false; // Falló
+      }
+    } catch (e) {
+      print('Error de conexión al imprimir: $e');
+      return false; // Falló
     }
   }
 
@@ -207,6 +218,36 @@ class EmployeeProvider extends ChangeNotifier {
     if (index != -1) {
       _allEmployees[index] = updatedEmployee;
       _applyFilters(); // Refresca la tabla al instante
+    }
+  }
+  // =====================================
+  // ELIMINAR EMPLEADO (DELETE)
+  // =====================================
+  Future<bool> deleteEmployee(int id) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/personal/$id');
+      
+      final response = await http.delete(
+        url,
+        headers: {
+          'Accept': 'application/json',
+        }
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Lo borramos de la lista principal
+        _allEmployees.removeWhere((emp) => emp.id == id);
+        
+        // Refrescamos los filtros y la tabla
+        _applyFilters();
+        return true; 
+      } else {
+        print('Error al eliminar: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Error de conexión al eliminar: $e');
+      return false;
     }
   }
 }

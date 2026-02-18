@@ -1,33 +1,49 @@
-import 'package:flutter/material.dart';
-
-class Unidad {
+class UnidadModel {
   final int id;
   final String nombre;
-  final int cantidadEmpleados;
-  final int estado; // 1: Activo, 2: En Revisión, 0: Inactivo
+  final String abreviatura;
+  final bool estado;
+  final int totalCargosProceso;
 
-  Unidad({
+  UnidadModel({
     required this.id,
     required this.nombre,
-    required this.cantidadEmpleados,
+    required this.abreviatura,
     required this.estado,
+    required this.totalCargosProceso,
   });
 
-  // Helper para obtener el texto del estado
-  String get estadoTexto {
-    switch (estado) {
-      case 1: return "ACTIVO";
-      case 2: return "EN REVISIÓN";
-      default: return "INACTIVO";
-    }
+  factory UnidadModel.fromJson(Map<String, dynamic> json) {
+    return UnidadModel(
+      id: json['id'] ?? 0,
+      nombre: json['nombre'] ?? 'Sin Nombre',
+      abreviatura: json['abreviatura'] ?? '',
+      estado: json['estado'] ?? false,
+      // Usaremos esto provisionalmente para "Cantidad de Empleados/Cargos"
+      totalCargosProceso: json['totalCargosProceso'] ?? 0, 
+    );
   }
+}
 
-  // Helper para obtener el color del badge según el estado
-  Color get colorEstado {
-    switch (estado) {
-      case 1: return Colors.green;
-      case 2: return Colors.orange;
-      default: return Colors.grey;
-    }
+class CargoUnidadModel {
+  final int id;
+  final String nombre;
+  final int unidadId;
+  final bool activo;
+
+  CargoUnidadModel({
+    required this.id,
+    required this.nombre,
+    required this.unidadId,
+    required this.activo,
+  });
+
+  factory CargoUnidadModel.fromJson(Map<String, dynamic> json) {
+    return CargoUnidadModel(
+      id: json['id'] ?? 0,
+      nombre: json['nombre'] ?? 'Sin Cargo',
+      unidadId: json['unidadId'] ?? 0,
+      activo: json['activo'] ?? true, // Por defecto true si viene null
+    );
   }
 }
