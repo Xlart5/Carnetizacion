@@ -144,7 +144,7 @@ class CredentialCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  "Elecciones generales 2026",
+                  "Elecciones subnacionales 2026",
                   style: TextStyle(color: Colors.white, fontSize: 7),
                 ),
               ],
