@@ -28,8 +28,8 @@ class _EditEmployeeSheetState extends State<EditEmployeeSheet> {
     super.initState();
     // Pre-cargamos los datos actuales del empleado
     _nombreCtrl = TextEditingController(text: widget.employee.nombre);
-    _paternoCtrl = TextEditingController(text: widget.employee.paterno);
-    _maternoCtrl = TextEditingController(text: widget.employee.materno);
+    _paternoCtrl = TextEditingController(text: widget.employee.apellidoPaterno);
+    _maternoCtrl = TextEditingController(text: widget.employee.apellidoMaterno);
     _ciCtrl = TextEditingController(text: widget.employee.ci);
     _cargoCtrl = TextEditingController(text: widget.employee.cargo);
     _unidadCtrl = TextEditingController(text: widget.employee.unidad);
@@ -51,9 +51,9 @@ class _EditEmployeeSheetState extends State<EditEmployeeSheet> {
       // 1. Creamos la copia con los nuevos datos
       final updatedEmployee = widget.employee.copyWith(
         nombre: _nombreCtrl.text.trim(),
-        paterno: _paternoCtrl.text.trim(),
-        materno: _maternoCtrl.text.trim(),
-        ci: _ciCtrl.text.trim(),
+       apellidoPaterno: _paternoCtrl.text.trim(),
+        apellidoMaterno: _maternoCtrl.text.trim(),
+        carnetIdentidad: _ciCtrl.text.trim(),
         cargo: _cargoCtrl.text.trim(),
         unidad: _unidadCtrl.text.trim(),
       );

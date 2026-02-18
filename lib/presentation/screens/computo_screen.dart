@@ -19,83 +19,9 @@ class _ComputoScreenState extends State<ComputoScreen> {
   void initState() {
     super.initState();
 
-    // --- DATOS DE PRUEBA ---
-    final List<ComputoItem> mockData = [
-      ComputoItem(
-        empleado: Employee(
-          id: 1,
-          nombre: "Mauricio Oscar",
-          paterno: "Sandoval",
-          materno: "",
-          ci: "5191898",
-          cargo: "Facilitador Electoral",
-          unidad: "Servicio Intercultural",
-          estado: 1,
-          photoUrl: "",
-        ),
-        celular: "74312716",
-      ),
-      ComputoItem(
-        empleado: Employee(
-          id: 2,
-          nombre: "Deibi Remberto",
-          paterno: "Claros",
-          materno: "",
-          ci: "7887490",
-          cargo: "Asistente Técnico",
-          unidad: "Asesoría Legal",
-          estado: 1,
-          photoUrl: "",
-        ),
-        celular: "69417794",
-      ),
-      ComputoItem(
-        empleado: Employee(
-          id: 3,
-          nombre: "Limbert",
-          paterno: "Mamani",
-          materno: "",
-          ci: "8018836",
-          cargo: "Soporte Informático",
-          unidad: "Tecnologías",
-          estado: 1,
-          photoUrl: "",
-        ),
-        celular: "65506231",
-      ),
-      ComputoItem(
-        empleado: Employee(
-          id: 4,
-          nombre: "Hristo Adimir",
-          paterno: "Calle",
-          materno: "",
-          ci: "9425334",
-          cargo: "Coordinador Electoral",
-          unidad: "Tecnologías",
-          estado: 1,
-          photoUrl: "",
-        ),
-        celular: "68490638",
-        tieneAcceso: true,
-      ), // Ya tiene acceso
-      ComputoItem(
-        empleado: Employee(
-          id: 5,
-          nombre: "Fabiola Ximena",
-          paterno: "Fernández",
-          materno: "",
-          ci: "6418687",
-          cargo: "Coordinador Electoral",
-          unidad: "Unidad de Geografía",
-          estado: 1,
-          photoUrl: "",
-        ),
-        celular: "69458327",
-      ),
-    ];
+    
 
-    // Inicializamos el DataSource y le pasamos la función para que nos avise de cambios
-    _dataSource = ComputoDataSource(context, mockData, _updateState);
+  
   }
 
   // Esta función es llamada por el DataSource cada vez que algo cambia (selección o acceso)

@@ -18,7 +18,8 @@ class ComputoItem {
 class ComputoDataSource extends DataTableSource {
   final BuildContext context;
   final List<ComputoItem> _allItems; // Guardamos TODOS los registros aquí
-  final VoidCallback onStateChanged; // Avisa a la pantalla para actualizar las tarjetas
+  final VoidCallback
+  onStateChanged; // Avisa a la pantalla para actualizar las tarjetas
 
   bool _showOnlyPending = false; // Estado del filtro
 
@@ -58,7 +59,7 @@ class ComputoDataSource extends DataTableSource {
     for (var item in items) {
       if (item.isSelected) {
         item.tieneAcceso = true;
-        item.isSelected = false; 
+        item.isSelected = false;
         changed = true;
       }
     }
@@ -72,7 +73,7 @@ class ComputoDataSource extends DataTableSource {
   DataRow? getRow(int index) {
     final currentItems = items; // Usamos la lista filtrada
     if (index >= currentItems.length) return null;
-    
+
     final item = currentItems[index];
     final emp = item.empleado;
 
@@ -82,7 +83,7 @@ class ComputoDataSource extends DataTableSource {
         if (value != null) {
           item.isSelected = value;
           notifyListeners();
-          onStateChanged(); 
+          onStateChanged();
         }
       },
       cells: [
@@ -92,16 +93,39 @@ class ComputoDataSource extends DataTableSource {
             padding: const EdgeInsets.symmetric(vertical: 10.0),
             child: Row(
               children: [
-                CircleAvatar(backgroundColor: Colors.grey.shade100, radius: 18, child: const Icon(Icons.person, color: Colors.black54, size: 20)),
+                CircleAvatar(
+                  backgroundColor: Colors.grey.shade100,
+                  radius: 18,
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.black54,
+                    size: 20,
+                  ),
+                ),
                 const SizedBox(width: 15),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(emp.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2D3748))),
+                      Text(
+                        emp.nombreCompleto,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text(emp.cargo, style: TextStyle(fontSize: 11, color: Colors.grey.shade500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(
+                        emp.cargo,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
@@ -109,18 +133,41 @@ class ComputoDataSource extends DataTableSource {
             ),
           ),
         ),
-        DataCell(Text(emp.ci, style: const TextStyle(fontSize: 13, color: Colors.black87))),
+        DataCell(
+          Text(
+            emp.ci,
+            style: const TextStyle(fontSize: 13, color: Colors.black87),
+          ),
+        ),
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-            child: Text(emp.unidad, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Text(
+              emp.unidad,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade700,
+              ),
+            ),
           ),
         ),
-        DataCell(Text(item.celular, style: const TextStyle(fontSize: 13, color: Colors.black87))),
+        DataCell(
+          Text(
+            item.celular,
+            style: const TextStyle(fontSize: 13, color: Colors.black87),
+          ),
+        ),
         DataCell(
           Icon(
-            item.tieneAcceso ? Icons.check_circle_outline : Icons.do_not_disturb_alt,
+            item.tieneAcceso
+                ? Icons.check_circle_outline
+                : Icons.do_not_disturb_alt,
             color: item.tieneAcceso ? Colors.green : Colors.red.shade300,
             size: 22,
           ),
@@ -148,4 +195,4 @@ class ComputoDataSource extends DataTableSource {
   int get rowCount => items.length; // Filas dependen del filtro
   @override
   int get selectedRowCount => selectedCount;
-} 
+}

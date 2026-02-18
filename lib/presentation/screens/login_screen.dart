@@ -74,15 +74,6 @@ class _LoginScreenState extends State<LoginScreen> {
               color: const Color(0xFF1E2A4F),
               child: Stack(
                 children: [
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: 0.1,
-                      child: Image.network(
-                        'https://www.transparenttextures.com/patterns/graphy.png',
-                        repeat: ImageRepeat.repeat,
-                      ),
-                    ),
-                  ),
                   Padding(
                     padding: const EdgeInsets.all(50.0),
                     child: Column(

@@ -1,171 +1,272 @@
 import 'dart:convert';
-
 import 'package:carnetizacion/config/constans/constants/environment.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/selection_models.dart';
 
-
 class RegisterProvider extends ChangeNotifier {
-  // --- ESTADO DE LISTAS ---
-  List<UnidadItem> _unidades = [];
-  bool _isLoadingList = false;
-  
-  // --- ESTADO DEL FORMULARIO ---
-  UnidadItem? _selectedUnidad;
-  CargoItem? _selectedCargo;
+  // === URL BASE (Actualiza tu Ngrok aquí) ===
+  final String baseUrl = Environment.apiUrl;
+
+  // === CONTROL DE PÁGINAS ===
+  int _currentPage = 0;
+  int get currentPage => _currentPage;
+
+  void setPage(int page) {
+    _currentPage = page;
+    notifyListeners();
+  }
+
+  // === DATOS DEL FORMULARIO ===
+  // Paso 1: Foto
   XFile? _imageFile;
-  bool _isSubmitting = false;
-  String _message = '';
+  int? _imagenId;
+  bool _isUploadingImage = false;
 
-  // Getters
-  List<UnidadItem> get unidades => _unidades;
-  List<CargoItem> get availableCargos => _selectedUnidad?.cargos ?? []; // Solo cargos de la unidad seleccionada
-  UnidadItem? get selectedUnidad => _selectedUnidad;
-  CargoItem? get selectedCargo => _selectedCargo;
   XFile? get imageFile => _imageFile;
-  bool get isLoadingList => _isLoadingList;
-  bool get isSubmitting => _isSubmitting;
-  String get message => _message;
+  bool get isUploadingImage => _isUploadingImage;
+  bool get hasImage => _imagenId != null;
 
-  // 1. CARGAR LAS LISTAS (Unidades y Cargos anidados)
-  Future<void> fetchFormOptions() async {
-    _isLoadingList = true;
+  // Paso 2: Datos Personales
+  String nombre = '';
+  String paterno = '';
+  String materno = '';
+  String ci = '';
+  String celular = '';
+
+  // Paso 3: Unidad y Cargo
+  // === Paso 3: Unidad y Cargo ===
+  List<UnidadItem> _unidades = [];
+  List<CargoItem> _todosLosCargos =
+      []; // Almacena todos los cargos temporalmente
+  bool isLoadingData = false; // Para mostrar ruedita de carga en la UI
+
+  UnidadItem? selectedUnidad;
+  CargoItem? selectedCargo;
+  String? selectedCircunscripcion;
+
+  // Lista estática de Cochabamba
+  final List<String> circunscripcionesCbba = [
+    'C-20',
+    'C-21',
+    'C-22',
+    'C-23',
+    'C-24',
+    'C-25',
+    'C-26',
+    'C-27',
+    'C-28',
+  ];
+
+  List<UnidadItem> get unidades => _unidades;
+
+  // Getter MÁGICO: Filtra los cargos mostrando solo los que pertenecen a la Unidad seleccionada
+  List<CargoItem> get availableCargos {
+    if (selectedUnidad == null) return [];
+    return _todosLosCargos
+        .where((cargo) => cargo.unidadId == selectedUnidad!.id)
+        .toList();
+  }
+
+  // Getter para saber si eligieron Notario
+  bool get isNotarioSelected {
+    if (selectedCargo == null) return false;
+    return selectedCargo!.nombre.toUpperCase().contains('NOTARIO');
+  }
+
+  // =====================================
+  // FETCH DESDE LA API (NUEVO)
+  // =====================================
+  Future<void> fetchUnidadesYCargos() async {
+    isLoadingData = true;
     notifyListeners();
 
     try {
-      final url = Uri.parse('https://walisanga.space/credenciales-TED/api/list/secciones-cargos');
-      // Recuerda usar el token si la API lo pide, aunque esta parece pública por tu ejemplo
-      final response = await http.get(url, );
+      // 1. Obtener Unidades
+      final resUnidades = await http.get(Uri.parse('$baseUrl/api/unidades'));
+      if (resUnidades.statusCode == 200) {
+        final List<dynamic> unData = json.decode(
+          utf8.decode(resUnidades.bodyBytes),
+        );
+        _unidades = unData.map((e) => UnidadItem.fromJson(e)).toList();
+      }
 
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body);
-        final List<dynamic> data = decoded['data'];
-        _unidades = data.map((e) => UnidadItem.fromJson(e)).toList();
+      // 2. Obtener Cargos
+      final resCargos = await http.get(
+        Uri.parse('$baseUrl/api/cargos-proceso'),
+      );
+      if (resCargos.statusCode == 200) {
+        final List<dynamic> carData = json.decode(
+          utf8.decode(resCargos.bodyBytes),
+        );
+        _todosLosCargos = carData.map((e) => CargoItem.fromJson(e)).toList();
       }
     } catch (e) {
-      print("Error cargando listas: $e");
-    } finally {
-      _isLoadingList = false;
-      notifyListeners();
+      print("Error cargando unidades/cargos: $e");
     }
-  }
 
-  // 2. LÓGICA DE SELECCIÓN
-  void setUnidad(UnidadItem? unidad) {
-    _selectedUnidad = unidad;
-    _selectedCargo = null; // ⚠️ Importante: Resetear cargo al cambiar unidad
+    isLoadingData = false;
     notifyListeners();
   }
 
-  void setCargo(CargoItem? cargo) {
-    _selectedCargo = cargo;
+  // Paso 4: Verificación
+  String correo = '';
+  String codigoVerificacion = '';
+  bool _isRequestingCode = false;
+  bool _isSubmitting = false;
+
+  bool get isRequestingCode => _isRequestingCode;
+  bool get isSubmitting => _isSubmitting;
+
+  // === MÉTODOS DE LA API ===
+
+  // 1. SUBIR IMAGEN (POST /api/imagenes/upload)
+  // 1. SUBIR IMAGEN (POST /api/imagenes/upload) CORREGIDO PARA WEB Y NATIVO
+  // 1. SUBIR IMAGEN (POST /api/imagenes/upload)
+  Future<bool> uploadImage(XFile file) async {
+    _isUploadingImage = true;
+    _imageFile = file;
     notifyListeners();
+
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/imagenes/upload'),
+      );
+
+      // Leemos los bytes de la imagen
+      final bytes = await file.readAsBytes();
+
+      // ¡AQUÍ ESTÁ LA MAGIA TIPO POSTMAN!
+      // Forzamos que el servidor lo reconozca como image/jpeg
+      final multipartFile = http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: file.name.isNotEmpty ? file.name : 'foto_perfil.jpg',
+        contentType: MediaType('image', 'jpeg'), // <--- Define el MIME type
+      );
+
+      request.files.add(multipartFile);
+
+      var response = await request.send();
+      var responseData = await response.stream.bytesToString();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = json.decode(responseData);
+        _imagenId = decoded['idImagen'];
+        print("✅ IMAGEN SUBIDA CON ÉXITO. ID: $_imagenId");
+
+        _isUploadingImage = false;
+        notifyListeners();
+        return true;
+      } else {
+        print("⚠️ EL SERVIDOR RECHAZÓ LA IMAGEN.");
+        print("Código de error: ${response.statusCode}");
+        print("Respuesta del servidor: $responseData");
+      }
+    } catch (e) {
+      print("❌ ERROR DE CONEXIÓN AL SUBIR LA IMAGEN.");
+      print("Detalle del error: $e");
+      if (e.toString().contains("XMLHttpRequest")) {
+        print(
+          "🛑 ALERTA: Esto es un error de CORS. Tu backend no permite peticiones desde Flutter Web local.",
+        );
+      }
+    }
+
+    _isUploadingImage = false;
+    notifyListeners();
+    return false;
   }
 
-  // 3. SELECCIÓN DE IMAGEN
-  Future<void> pickImage(ImageSource source) async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: source, imageQuality: 50);
-    if (image != null) {
-      _imageFile = image;
-      notifyListeners();
+  // 2. SOLICITAR CÓDIGO (POST /api/personal/solicitar-codigo)
+  Future<bool> solicitarCodigo() async {
+    _isRequestingCode = true;
+    notifyListeners();
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/personal/solicitar-codigo'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"correo": correo, "carnetIdentidad": ci}),
+      );
+
+      if (response.statusCode == 200) {
+        _isRequestingCode = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      print("Error al solicitar código: $e");
     }
+    _isRequestingCode = false;
+    notifyListeners();
+    return false;
   }
 
-  // 4. ENVIAR FORMULARIO (POST MULTIPART)
-  Future<bool> registerEmployee({
-    required String nombre,
-    required String apellidos, // Recibimos "Perez Lopez"
-    required String ci,
-    required String celular,
-    required String codigo,
-  }) async {
-    if (_selectedCargo == null) {
-      _message = "Debes seleccionar un Cargo";
-      notifyListeners();
-      return false;
-    }
-
+  // 3. REGISTRAR PERSONAL (POST /api/personal/registrar)
+  Future<bool> registrarPersonal() async {
     _isSubmitting = true;
     notifyListeners();
 
     try {
-      final uri = Uri.parse('https://walisanga.space/credenciales-TED/api/registrarPersonal');
-      
-      var request = http.MultipartRequest('POST', uri);
-      
-      // Headers
-      request.headers.addAll({
-        'Authorization': 'Bearer ${Environment.apiToken}',
-        'Accept': 'application/json',
-      });
-
-      // --- 1. SEPARAR APELLIDOS (Lógica simple) ---
-      // Si escribe "Perez Lopez", paterno="Perez", materno="Lopez"
-      // Si solo escribe "Perez", paterno="Perez", materno=""
-      List<String> partesApellido = apellidos.trim().split(' ');
-      String paterno = partesApellido.isNotEmpty ? partesApellido[0] : '';
-      String materno = partesApellido.length > 1 ? partesApellido.sublist(1).join(' ') : '';
-
-      // --- 2. CAMPOS DEL FORMULARIO (Según tu Postman) ---
-      request.fields['nombre'] = nombre;
-      request.fields['paterno'] = paterno;
-      request.fields['materno'] = materno;
-      request.fields['id_cargo'] = _selectedCargo!.id.toString();
-      request.fields['ci'] = ci;
-      request.fields['celular'] = celular;
-      request.fields['token'] = codigo; // El código de verificación
-      
-      // --- 3. CAMPOS POR DEFECTO (Necesarios para que no falle) ---
-      request.fields['estado'] = '1';         // 1 = Activo/Registrado
-      request.fields['accesoComputo'] = '0';  // 0 = No tiene acceso especial (valor seguro)
-      request.fields['complemento'] = '';     // Vacío por defecto
-      request.fields['extencion'] = 'CB';     // Poner LP por defecto o agregar un dropdown en la UI
-      request.fields['email'] = '';           // Opcional según tu Postman
-      request.fields['ciexterno'] = '';       // Opcional
-
-      // --- 4. FOTO (Campo 'photo') ---
-      if (_imageFile != null) {
-        final bytes = await _imageFile!.readAsBytes();
-        final file = http.MultipartFile.fromBytes(
-          'photo', // ⚠️ OJO: En tu Postman dice 'photo', no 'foto'
-          bytes,
-          filename: 'photo.jpg'
-        );
-        request.files.add(file);
-      }
-
-      // Enviar
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      print("Status: ${response.statusCode}");
-      print("Body: ${response.body}");
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/personal/registrar'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "nombre": nombre,
+          "apellidoPaterno": paterno,
+          "apellidoMaterno": materno,
+          "carnetIdentidad": ci,
+          "correo": correo,
+          "celular": celular,
+          "accesoComputo": false,
+          // Si es notario manda la seleccionada, sino manda vacío o la unidad
+          "nroCircunscripcion": isNotarioSelected
+              ? selectedCircunscripcion
+              : "",
+          "tipo": "EVENTUAL",
+          "cargoID": selectedCargo?.id ?? 1,
+          "imagenId": _imagenId,
+          "codigoVerificacion": codigoVerificacion,
+        }),
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        _message = "Personal registrado con éxito";
         _isSubmitting = false;
         notifyListeners();
         return true;
-      } else {
-        // Intentar leer el mensaje de error del JSON
-        try {
-           final errorJson = json.decode(response.body);
-           _message = errorJson['message'] ?? "Error en el registro";
-        } catch(_) {
-           _message = "Error ${response.statusCode}. Revise los datos.";
-        }
-        _isSubmitting = false;
-        notifyListeners();
-        return false;
       }
     } catch (e) {
-      _message = "Error de conexión: $e";
-      _isSubmitting = false;
-      notifyListeners();
-      return false;
+      print("Error al registrar: $e");
     }
+    _isSubmitting = false;
+    notifyListeners();
+    return false;
+  }
+
+  // =====================================
+  // LIMPIAR FORMULARIO
+  // =====================================
+  void resetForm() {
+    _currentPage = 0;
+    _imageFile = null;
+    _imagenId = null;
+    nombre = '';
+    paterno = '';
+    materno = '';
+    ci = '';
+    celular = '';
+    selectedUnidad = null;
+    selectedCargo = null;
+    selectedCircunscripcion = null;
+    correo = '';
+    codigoVerificacion = '';
+    _isUploadingImage = false;
+    _isRequestingCode = false;
+    _isSubmitting = false;
+    notifyListeners();
   }
 }

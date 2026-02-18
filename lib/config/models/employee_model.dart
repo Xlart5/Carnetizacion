@@ -3,86 +3,101 @@ import 'package:flutter/material.dart';
 class Employee {
   final int id;
   final String nombre;
-  final String paterno;
-  final String materno;
-  final String cargo;
-  final String ci;
-  final String unidad; // "seccion_nombre"
-  final int estado;    // Viene como 0 o 1
+  final String apellidoPaterno;
+  final String apellidoMaterno;
+  final String carnetIdentidad;
+  final String? correo;
+  final String celular;
+  final bool accesoComputo;
+  final String estadoActual;
+  final String cargo; // <-- VUELVE A SER TEXTO
+  final String unidad; // <-- VUELVE A SER TEXTO
   final String photoUrl;
+  final String qrUrl;
 
   Employee({
     required this.id,
     required this.nombre,
-    required this.paterno,
-    required this.materno,
+    required this.apellidoPaterno,
+    required this.apellidoMaterno,
+    required this.carnetIdentidad,
+    this.correo,
+    required this.celular,
+    required this.accesoComputo,
+    required this.estadoActual,
     required this.cargo,
-    required this.ci,
     required this.unidad,
-    required this.estado,
-    required this.photoUrl,
+    required this.photoUrl, required this.qrUrl,
   });
 
-  // Getter para mostrar el nombre completo en la UI
-  String get nombreCompleto => "$nombre $paterno $materno";
+  String get nombreCompleto =>
+      "$nombre $apellidoPaterno $apellidoMaterno".trim();
+  String get ci => carnetIdentidad;
+  int get estado => estadoActual.toUpperCase() == "PERSONAL REGISTRADO" ? 0 : 1;
 
-  // Getter para traducir el estado numérico a texto
-  String get estadoTexto => estado == 1 ? "Impreso" : "Pendiente";
-  
-  // Getter opcional para color (útil para la tabla)
-  Color get colorEstado => estado == 1 ? Colors.green : Colors.orange;
+  // TU LÓGICA DE COLORES
+  Color get colorEstado {
+    final estadoUpper = estadoActual.toUpperCase();
+    if (estadoUpper == "PERSONAL REGISTRADO") {
+      return Colors.redAccent;
+    } else if (estadoUpper.contains("RENUNCIA")) {
+      return Colors.orangeAccent;
+    } else {
+      return Colors.greenAccent.shade700;
+    }
+  }
 
   factory Employee.fromJson(Map<String, dynamic> json) {
     return Employee(
       id: json['id'] ?? 0,
       nombre: json['nombre'] ?? '',
-      paterno: json['paterno'] ?? '',
-      materno: json['materno'] ?? '',
-      cargo: json['cargo_nombre'] ?? 'Sin Cargo',
-      ci: json['ci'] ?? '',
-      unidad: json['seccion_nombre'] ?? 'General',
-      estado: json['estado'] ?? 0,
-      photoUrl: json['photo'] ?? '',
+      apellidoPaterno: json['apellidoPaterno'] ?? '',
+      apellidoMaterno: json['apellidoMaterno'] ?? '',
+      carnetIdentidad: json['carnetIdentidad'] ?? '',
+      correo: json['correo'],
+      celular: json['celular'] ?? '',
+      accesoComputo: json['accesoComputo'] ?? false,
+      estadoActual: json['estadoActual'] ?? 'DESCONOCIDO',
+      // Leemos el texto tal cual viene del JSON
+      cargo: json['cargo'] ?? 'Sin Cargo',
+      unidad: json['unidad'] ?? 'Sin Unidad',
+      // Si te fijas en tu foto, la API te manda la URL en el campo "imagen"
+      photoUrl:
+          json['imagen'] ??
+          'https://ui-avatars.com/api/?name=${json['nombre']}',
+      qrUrl: json['qr']
     );
   }
 
-  // --- LO NUEVO: COPYWITH (Para editar estado sin perder datos) ---
   Employee copyWith({
     int? id,
     String? nombre,
-    String? paterno,
-    String? materno,
+    String? apellidoPaterno,
+    String? apellidoMaterno,
+    String? carnetIdentidad,
+    String? correo,
+    String? celular,
+    bool? accesoComputo,
+    String? estadoActual,
     String? cargo,
-    String? ci,
     String? unidad,
-    int? estado,
     String? photoUrl,
+    String? qrUrl
   }) {
     return Employee(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
-      paterno: paterno ?? this.paterno,
-      materno: materno ?? this.materno,
+      apellidoPaterno: apellidoPaterno ?? this.apellidoPaterno,
+      apellidoMaterno: apellidoMaterno ?? this.apellidoMaterno,
+      carnetIdentidad: carnetIdentidad ?? this.carnetIdentidad,
+      correo: correo ?? this.correo,
+      celular: celular ?? this.celular,
+      accesoComputo: accesoComputo ?? this.accesoComputo,
+      estadoActual: estadoActual ?? this.estadoActual,
       cargo: cargo ?? this.cargo,
-      ci: ci ?? this.ci,
       unidad: unidad ?? this.unidad,
-      estado: estado ?? this.estado,
-      photoUrl: photoUrl ?? this.photoUrl,
+      photoUrl: photoUrl ?? this.photoUrl, 
+      qrUrl: qrUrl ?? this.qrUrl,
     );
-  }
-
-  // --- LO NUEVO: TOJSON (Para enviar a la API de registrarPersonal) ---
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'nombre': nombre,
-      'paterno': paterno,
-      'materno': materno,
-      'cargo_nombre': cargo,    // Mapeamos de vuelta a como lo espera la API
-      'ci': ci,
-      'seccion_nombre': unidad, // Mapeamos de vuelta
-      'estado': estado,
-      'photo': photoUrl,
-    };
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:carnetizacion/config/constans/constants/environment.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
@@ -13,7 +14,8 @@ class AuthProvider extends ChangeNotifier {
   String get errorMessage => _errorMessage;
 
   // Si tienes un token, el usuario está autenticado
-  bool get isAuthenticated => _currentUser != null && _currentUser!.token.isNotEmpty;
+  bool get isAuthenticated =>
+      _currentUser != null && _currentUser!.token.isNotEmpty;
 
   Future<bool> login(String username, String password, bool recordar) async {
     _isLoading = true;
@@ -21,14 +23,14 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // ATENCIÓN: Esta es la URL de tu ngrok. 
+      // ATENCIÓN: Esta es la URL de tu ngrok.
       // Si reinicias ngrok, debes actualizar esta URL.
-      final url = Uri.parse('https://3589-2800-cd0-7b1c-e300-885c-d8e4-856b-8432.ngrok-free.app/api/auth/login');
+      final url = Uri.parse('${Environment.apiUrl}/api/auth/login');
 
       final Map<String, dynamic> bodyData = {
         "username": username,
         "password": password,
-        "recordar": recordar
+        "recordar": recordar,
       };
 
       final response = await http.post(
@@ -43,7 +45,7 @@ class AuthProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
         _currentUser = UserModel.fromJson(decodedData);
-        
+
         // Aquí a futuro podrías guardar el token en SharedPreferences
         // si el usuario marcó "recordar".
 

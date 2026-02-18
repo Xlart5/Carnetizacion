@@ -1,6 +1,5 @@
 class Environment {
-  // Anteponemos el proxy 'https://cors-anywhere.herokuapp.com/'
-  static const String apiUrl = 'https://walisanga.space/credenciales-TED/api/list/personal';
-  
-  static const String apiToken = '4725'; 
+  // Solo debes cambiar esta variable cada vez que abras Ngrok
+  static const String apiUrl =
+      'https://270d-2800-cd0-7b1c-e300-907e-f5b9-2fee-2f6e.ngrok-free.app';
 }

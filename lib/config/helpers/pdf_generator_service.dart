@@ -204,7 +204,7 @@ class PdfGeneratorService {
                   pw.SizedBox(height: 0.5),
                   pw.Text(emp.nombreCompleto, textAlign: pw.TextAlign.center, maxLines: 2, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 5)),
                   pw.SizedBox(height: 0.5),
-                  pw.Text(emp.cargo, textAlign: pw.TextAlign.center, maxLines: 2, style: pw.TextStyle(fontSize: 4.5)),
+                  pw.Text(emp.cargo.toString(), textAlign: pw.TextAlign.center, maxLines: 2, style: pw.TextStyle(fontSize: 4.5)),
                 ],
               ),
             ),

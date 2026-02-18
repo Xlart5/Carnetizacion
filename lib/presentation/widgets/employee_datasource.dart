@@ -123,7 +123,7 @@ class EmployeeDataSource extends DataTableSource {
                 Icon(Icons.circle, size: 8, color: colorEstado),
                 const SizedBox(width: 6),
                 Text(
-                  emp.estadoTexto,
+                  emp.estadoActual,
                   style: TextStyle(
                     color: colorEstado,
                     fontWeight: FontWeight.bold,

@@ -23,16 +23,43 @@ class Employee {
 class DashboardProvider extends ChangeNotifier {
   // Datos Mock (Simulados de la imagen)
   final List<Employee> _employees = [
-    Employee(id: '1', name: 'Carlos Mendizábal', role: 'Analista Programador', ci: '8342191 - LP', unit: 'TECNOLOGÍAS', status: 'Impreso'),
-    Employee(id: '2', name: 'Ana María Rojas', role: 'Jefe de Unidad', ci: '4910238 - OR', unit: 'RR.HH.', status: 'Pendiente'),
-    Employee(id: '3', name: 'Roberto Vaca', role: 'Auxiliar Administrativo', ci: '1029384 - SC', unit: 'ADMINISTRACIÓN', status: 'Impreso'),
+    Employee(
+      id: '1',
+      name: 'Carlos Mendizábal',
+      role: 'Analista Programador',
+      ci: '8342191 - LP',
+      unit: 'TECNOLOGÍAS',
+      status: 'Impreso',
+    ),
+    Employee(
+      id: '2',
+      name: 'Ana María Rojas',
+      role: 'Jefe de Unidad',
+      ci: '4910238 - OR',
+      unit: 'RR.HH.',
+      status: 'Pendiente',
+    ),
+    Employee(
+      id: '3',
+      name: 'Roberto Vaca',
+      role: 'Auxiliar Administrativo',
+      ci: '1029384 - SC',
+      unit: 'ADMINISTRACIÓN',
+      status: 'Impreso',
+    ),
   ];
 
   String _searchQuery = '';
-  
+
   List<Employee> get employees {
     if (_searchQuery.isEmpty) return _employees;
-    return _employees.where((e) => e.name.toLowerCase().contains(_searchQuery.toLowerCase()) || e.ci.contains(_searchQuery)).toList();
+    return _employees
+        .where(
+          (e) =>
+              e.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              e.ci.contains(_searchQuery),
+        )
+        .toList();
   }
 
   void search(String query) {
