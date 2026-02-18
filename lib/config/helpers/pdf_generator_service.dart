@@ -42,7 +42,18 @@ class PdfGeneratorService {
             ? i + itemsPerPage
             : employees.length,
       );
-
+      final List<pw.ImageProvider> qrs = await Future.wait(
+        chunk.map((emp) async {
+          if (emp.qrUrl.isEmpty) return logoTed;
+          try {
+            final response = await http.get(Uri.parse(emp.qrUrl));
+            if (response.statusCode == 200) {
+              return pw.MemoryImage(response.bodyBytes);
+            }
+          } catch (e) {}
+          return logoTed;
+        }),
+      );
       // Descargar fotos reales
       final List<pw.ImageProvider> photos = await Future.wait(
         chunk.map((emp) async {
@@ -80,7 +91,7 @@ class PdfGeneratorService {
                     templateFront,
                     logoTed,
                     logoElecciones,
-                    qrPlaceholder,
+                    qrs[index],
                   );
                 } else {
                   // Tarjeta Invisible (Mantiene el tamaño de la grilla fijo)
@@ -219,7 +230,7 @@ class PdfGeneratorService {
     pw.ImageProvider bg,
     pw.ImageProvider logoTed,
     pw.ImageProvider logoElec,
-    pw.ImageProvider qr,
+    pw.ImageProvider qrs,
   ) {
     return pw.Container(
       width: cardWidth,
@@ -243,7 +254,7 @@ class PdfGeneratorService {
               width: 70,
               height: 70,
               color: PdfColors.white,
-              child: pw.Image(qr),
+              child: pw.Image(qrs, fit: pw.BoxFit.cover),
             ),
           ),
 
