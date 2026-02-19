@@ -49,6 +49,7 @@ class RegisterProvider extends ChangeNotifier {
 
   // Lista estática de Cochabamba
   final List<String> circunscripcionesCbba = [
+    'C-02',
     'C-20',
     'C-21',
     'C-22',

@@ -88,6 +88,15 @@ class SideMenu extends StatelessWidget {
                     context.go('/impresion');
                   },
                 ),
+                _DrawerItem(
+                  icon: Icons.print_outlined,
+                  text: "Acceso",
+                  isActive: location == '/acceso',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.go('/acceso');
+                  },
+                ),
                 const Divider(height: 30), // Separador visual
                 _DrawerItem(
                   icon: Icons.computer_outlined,

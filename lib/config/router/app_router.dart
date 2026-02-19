@@ -1,5 +1,6 @@
 import 'package:carnetizacion/presentation/screens/computo_screen.dart';
 import 'package:carnetizacion/presentation/screens/login_screen.dart';
+import 'package:carnetizacion/presentation/screens/monitor_screen.dart';
 import 'package:carnetizacion/presentation/screens/unidades_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -65,6 +66,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/computo',
       builder: (context, state) => const ComputoScreen(),
+    ),
+    GoRoute(
+      path: '/acceso',
+      builder: (context, state) => const MonitorScreen(),
     ),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
   ],
