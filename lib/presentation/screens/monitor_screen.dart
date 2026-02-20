@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -12,7 +13,7 @@ class MonitorScreen extends StatefulWidget {
 
 class _MonitorScreenState extends State<MonitorScreen> {
   // Como la web corre en la misma PC que el servidor Dart, usamos localhost
-  final _canal = WebSocketChannel.connect(Uri.parse('ws://192.168.1.23:8080'));
+  final _canal = WebSocketChannel.connect(Uri.parse('ws://10.95.70.221:8080'));
   final FlutterTts _flutterTts = FlutterTts();
 
   Map<String, dynamic>? _persona;
@@ -29,19 +30,38 @@ class _MonitorScreenState extends State<MonitorScreen> {
     await _flutterTts.setLanguage("es-ES");
   }
 
-  void _escucharTunel() {
-    _canal.stream.listen((mensaje) {
-      final data = jsonDecode(mensaje);
-      setState(() {
-        _persona = data;
-        _esperando = false;
-      });
-      _hablar(data);
+  // Cambiamos la variable del canal por la referencia a Firebase
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref(
+    'ultimo_escaneo',
+  );
+  int _ultimoTimestampProcesado =
+      0; // Para no repetir el audio de escaneos viejos al recargar la página
 
-      // Opcional: Volver a la pantalla de "Esperando..." después de 8 segundos
-      Future.delayed(const Duration(seconds: 8), () {
-        if (mounted) setState(() => _esperando = true);
-      });
+  void _escucharTunel() {
+    // Escuchamos CUALQUIER cambio en "ultimo_escaneo" en tiempo real
+    _dbRef.onValue.listen((DatabaseEvent event) {
+      if (event.snapshot.value != null) {
+        // Convertimos el dato que llegó a un Map
+        final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+
+        // Verificamos que sea un escaneo NUEVO usando el timestamp
+        final int timestampNuevo = data['timestamp'] ?? 0;
+        if (timestampNuevo > _ultimoTimestampProcesado) {
+          _ultimoTimestampProcesado = timestampNuevo;
+
+          setState(() {
+            _persona = data;
+            _esperando = false;
+          });
+
+          _hablar(data); // Hace sonar el nombre o el error
+
+          // Volver a la pantalla de "Esperando..." después de 8 segundos
+          Future.delayed(const Duration(seconds: 8), () {
+            if (mounted) setState(() => _esperando = true);
+          });
+        }
+      }
     });
   }
 

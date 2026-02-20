@@ -2,6 +2,8 @@ import 'package:carnetizacion/config/provider/auth_provider.dart';
 import 'package:carnetizacion/config/provider/employee_provider.dart';
 import 'package:carnetizacion/config/provider/register_provider.dart';
 import 'package:carnetizacion/config/provider/unidades_provider.dart';
+import 'package:carnetizacion/firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,7 +12,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'config/router/app_router.dart';
 import 'config/theme/app_colors.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
