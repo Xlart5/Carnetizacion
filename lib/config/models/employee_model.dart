@@ -14,6 +14,7 @@ class Employee {
   final String unidad; // <-- VUELVE A SER TEXTO
   final String photoUrl;
   final String qrUrl;
+  final String Circu;
 
   Employee({
     required this.id,
@@ -27,7 +28,9 @@ class Employee {
     required this.estadoActual,
     required this.cargo,
     required this.unidad,
-    required this.photoUrl, required this.qrUrl,
+    required this.photoUrl,
+    required this.qrUrl,
+    required this.Circu,
   });
 
   String get nombreCompleto =>
@@ -65,7 +68,8 @@ class Employee {
       photoUrl:
           json['imagen'] ??
           'https://ui-avatars.com/api/?name=${json['nombre']}',
-      qrUrl: json['qr']
+      qrUrl: json['qr'],
+      Circu: json['nroCircunscripcion'],
     );
   }
 
@@ -82,7 +86,8 @@ class Employee {
     String? cargo,
     String? unidad,
     String? photoUrl,
-    String? qrUrl
+    String? qrUrl,
+    String? circuns,
   }) {
     return Employee(
       id: id ?? this.id,
@@ -96,8 +101,9 @@ class Employee {
       estadoActual: estadoActual ?? this.estadoActual,
       cargo: cargo ?? this.cargo,
       unidad: unidad ?? this.unidad,
-      photoUrl: photoUrl ?? this.photoUrl, 
+      photoUrl: photoUrl ?? this.photoUrl,
       qrUrl: qrUrl ?? this.qrUrl,
+      Circu: circuns ?? this.Circu,
     );
   }
 }

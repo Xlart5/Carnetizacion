@@ -232,6 +232,11 @@ class PdfGeneratorService {
     pw.ImageProvider logoElec,
     pw.ImageProvider qrs,
   ) {
+    // 👇 LA MAGIA CONDICIONAL EMPIEZA AQUÍ 👇
+    final String cargoMinusculas = emp.cargo.toString().toLowerCase();
+    final bool esNotario = cargoMinusculas.contains('notari');
+    // 👆 LA MAGIA CONDICIONAL TERMINA AQUÍ 👆
+
     return pw.Container(
       width: cardWidth,
       height: cardHeight,
@@ -246,16 +251,40 @@ class PdfGeneratorService {
 
           // 2. Header
 
-          // 3. QR
+          // 3. QR o CIRCUNSCRIPCIÓN (Reemplazado con la condición)
           pw.Positioned(
             top: 30,
             left: 30,
-            child: pw.Container(
-              width: 70,
-              height: 70,
-              color: PdfColors.white,
-              child: pw.Image(qrs, fit: pw.BoxFit.cover),
-            ),
+            child: esNotario
+                // SI ES NOTARIO: Mostramos la cajita de Circunscripción
+                ? pw.Container(
+                    width: 70,
+                    height: 70,
+
+                    child: pw.Column(
+                      mainAxisAlignment: pw.MainAxisAlignment.center,
+                      children: [
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          // Aquí llamamos a tu variable de circunscripción
+                          emp.Circu.toString(),
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(
+                            fontSize: 30,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                // SI NO ES NOTARIO: Mostramos el QR normal
+                : pw.Container(
+                    width: 70,
+                    height: 70,
+                    color: PdfColors.white,
+                    child: pw.Image(qrs, fit: pw.BoxFit.cover),
+                  ),
           ),
 
           // 4. Logo TED

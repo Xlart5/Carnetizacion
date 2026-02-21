@@ -367,13 +367,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Icons.person_outline,
               (v) => provider.nombre = v,
             ),
-            _buildInputField(
+            _buildInputFieldnorequiered(
               "Apellido Paterno",
               "Ej. Pérez",
               Icons.person_outline,
               (v) => provider.paterno = v,
             ),
-            _buildInputField(
+            _buildInputFieldnorequiered(
               "Apellido Materno",
               "Ej. García",
               Icons.person_outline,
@@ -384,7 +384,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               "Ej. 1234567",
               Icons.badge_outlined,
               (v) => provider.ci = v,
-              isNumber: true,
             ),
             _buildInputField(
               "Número de Teléfono",
@@ -838,6 +837,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
             keyboardType: isNumber ? TextInputType.number : TextInputType.text,
             decoration: _inputDecoration(hint, icon),
             validator: (v) => v!.isEmpty ? 'Requerido' : null,
+            onSaved: (v) => onSaved(v!),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputFieldnorequiered(
+    String label,
+    String hint,
+    IconData icon,
+    Function(String) onSaved, {
+    bool isNumber = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+            decoration: _inputDecoration(hint, icon),
+
             onSaved: (v) => onSaved(v!),
           ),
         ],

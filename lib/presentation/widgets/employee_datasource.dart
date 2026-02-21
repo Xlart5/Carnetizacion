@@ -1,7 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:carnetizacion/config/helpers/pdf_generator_service.dart';
 import 'package:carnetizacion/config/provider/employee_provider.dart';
 import 'package:carnetizacion/presentation/widgets/edit_employee_sheet.dart';
 import 'package:carnetizacion/presentation/widgets/view_employee_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 // Importante para la navegación si usas editar
 import '../../config/models/employee_model.dart';
@@ -50,15 +53,16 @@ class EmployeeDataSource extends DataTableSource {
       },
 
       cells: [
-        // 1. FOTO
+        // 1. FOTO OPTIMIZADA
         DataCell(
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
             child: CircleAvatar(
               radius: 18,
               backgroundColor: Colors.grey[200],
+              // 🔥 MAGIA: Usamos CachedNetworkImageProvider
               backgroundImage: emp.photoUrl.isNotEmpty
-                  ? NetworkImage(emp.photoUrl)
+                  ? CachedNetworkImageProvider(emp.photoUrl) as ImageProvider
                   : null,
               child: emp.photoUrl.isEmpty
                   ? const Icon(Icons.person, size: 20, color: Colors.grey)
@@ -155,11 +159,27 @@ class EmployeeDataSource extends DataTableSource {
               const SizedBox(width: 5),
 
               // Imprimir (RESTAURADO)
+              // Imprimir (RESTAURADO)
               _ActionButton(
                 icon: Icons.print_outlined,
                 color: AppColors.primaryDark,
-                onTap: () {
-                  /* Lógica imprimir */
+                onTap: () async {
+                  // 1. Abrimos la vista previa de impresión nativa del navegador
+                  await Printing.layoutPdf(
+                    onLayout: (format) async {
+                      // Le pasamos al servicio una lista con un solo empleado: [emp]
+                      return await PdfGeneratorService.generateCredentialsPdf([
+                        emp,
+                      ]);
+                    },
+                    name:
+                        'Credencial_${emp.ci}.pdf', // Nombre del archivo si deciden guardarlo
+                  );
+
+                  // 2. Al cerrar la vista de impresión, preguntamos si salió bien para actualizar la BD
+                  if (context.mounted) {
+                    _preguntarSiImprimioBien(context, emp);
+                  }
                 },
               ),
 
@@ -308,6 +328,66 @@ void _mostrarDialogoEliminar(BuildContext context, Employee emp) {
             },
             child: const Text(
               "Sí, Eliminar",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _preguntarSiImprimioBien(BuildContext context, Employee emp) {
+  showDialog(
+    context: context,
+    builder: (BuildContext ctx) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.green, size: 28),
+            SizedBox(width: 10),
+            Text("¿Impresión Exitosa?"),
+          ],
+        ),
+        content: Text(
+          "¿Se imprimió correctamente la credencial de ${emp.nombreCompleto}?\n\nSi aceptas, su estado cambiará automáticamente a 'CREDENCIAL IMPRESO'.",
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text(
+              "No, mantener pendiente",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.successGreen,
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop(); // Cerramos el diálogo
+
+              // Llamamos a tu Provider para actualizar la Base de Datos
+              final provider = context.read<EmployeeProvider>();
+              bool success = await provider.markAsPrinted(emp);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? "Estado actualizado correctamente."
+                          : "Error al actualizar estado.",
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              "Sí, actualizar",
               style: TextStyle(color: Colors.white),
             ),
           ),

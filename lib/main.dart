@@ -13,7 +13,6 @@ import 'config/router/app_router.dart';
 import 'config/theme/app_colors.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
