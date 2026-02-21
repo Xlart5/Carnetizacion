@@ -66,8 +66,7 @@ class Employee {
       unidad: json['unidad'] ?? 'Sin Unidad',
       // Si te fijas en tu foto, la API te manda la URL en el campo "imagen"
       photoUrl:
-          json['imagen'] ??
-          'https://ui-avatars.com/api/?name=${json['nombre']}',
+          json['imagen'] ,
       qrUrl: json['qr'],
       Circu: json['nroCircunscripcion'],
     );

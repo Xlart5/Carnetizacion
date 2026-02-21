@@ -254,4 +254,47 @@ class EmployeeProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  // =====================================
+  // VARIABLES PARA REPORTES
+  // =====================================
+  List<dynamic> _reportData =
+      []; // Usamos dynamic para leer directo de tu nuevo endpoint
+  List<dynamic> get reportData => _reportData;
+  int get reportTotal => _reportData.length;
+
+  // =====================================
+  // BUSCAR POR CIRCUNSCRIPCIÓN (NUEVO ENDPOINT)
+  // =====================================
+  Future<void> fetchReportePorCircunscripcion(String cir) async {
+    _isLoading = true;
+    _reportData = []; // Limpiamos la búsqueda anterior
+    notifyListeners();
+
+    try {
+      final url = Uri.parse('$_baseUrl/api/personal/por/circunscripcion/$cir');
+
+      final response = await http.get(
+        url,
+        headers: {'Accept': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        // Decodificamos la lista exacta que nos manda tu Swagger
+        _reportData = json.decode(utf8.decode(response.bodyBytes));
+      } else {
+        print('Error en reporte: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error Conexión Reporte: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void limpiarReporte() {
+    _reportData = [];
+    notifyListeners();
+  }
 }

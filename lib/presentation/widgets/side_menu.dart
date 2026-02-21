@@ -97,6 +97,15 @@ class SideMenu extends StatelessWidget {
                     context.go('/acceso');
                   },
                 ),
+                _DrawerItem(
+                  icon: Icons.text_snippet_rounded,
+                  text: "Reporte",
+                  isActive: location == '/reportes',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/reportes');
+                  },
+                ),
                 const Divider(height: 30), // Separador visual
                 _DrawerItem(
                   icon: Icons.computer_outlined,
