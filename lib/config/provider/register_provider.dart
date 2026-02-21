@@ -123,9 +123,7 @@ class RegisterProvider extends ChangeNotifier {
 
   // === MÉTODOS DE LA API ===
 
-  // 1. SUBIR IMAGEN (POST /api/imagenes/upload)
-  // 1. SUBIR IMAGEN (POST /api/imagenes/upload) CORREGIDO PARA WEB Y NATIVO
-  // 1. SUBIR IMAGEN (POST /api/imagenes/upload)
+
   Future<bool> uploadImage(XFile file) async {
     _isUploadingImage = true;
     _imageFile = file;

@@ -46,6 +46,7 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   provider: ^6.1.1
+  shared_preferences: ^2.5.4
   web_socket_channel: ^3.0.3
 
 dev_dependencies:

@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:carnetizacion/config/constans/constants/environment.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/employee_model.dart';
+import 'package:flutter/foundation.dart'; // Obligatorio para usar compute
 
 class EmployeeProvider extends ChangeNotifier {
   // URL BASE (Actualiza tu ngrok si reinicias el servidor)
@@ -66,40 +68,64 @@ class EmployeeProvider extends ChangeNotifier {
   // =====================================
   // CARGAR EMPLEADOS (CORREGIDO: GET a /detalles)
   // =====================================
+  // =====================================
+  // CARGAR EMPLEADOS (CON CACHÉ INSTANTÁNEO)
+  // =====================================
   Future<void> fetchEmployees() async {
-    _isLoading = true;
-    notifyListeners();
+    // 1. Buscamos en el disco duro del navegador (Toma 0.05 segundos)
+    final prefs = await SharedPreferences.getInstance();
+    final String? cachedJson = prefs.getString('personal_cache');
 
+    if (cachedJson != null && cachedJson.isNotEmpty) {
+      // ¡Tenemos datos guardados! Los mostramos AL INSTANTE.
+      _allEmployees = await compute(parseEmployeesInBackground, cachedJson);
+      _actualizarListasSecundarias();
+      _isLoading = false;
+      notifyListeners(); // La pantalla se dibuja con los KPIs y la tabla vieja
+    } else {
+      // Solo mostramos la ruedita si es la primera vez en la vida que abre la app
+      _isLoading = true;
+      notifyListeners();
+    }
+
+    // 2. AHORA VAMOS A INTERNET EN SILENCIO (Modo Fantasma)
     try {
-      // Usamos el endpoint correcto de tu imagen
       final url = Uri.parse('$_baseUrl/api/personal/detalles');
-
-      // CAMBIO CLAVE: Usamos GET y le decimos a ngrok que no nos bloquee (Evita el 403)
-      final response = await http.get(url);
+      final response = await http.get(
+        url,
+        headers: {'Accept': 'application/json'},
+      );
 
       if (response.statusCode == 200) {
-        final List<dynamic> decoded = json.decode(
-          utf8.decode(response.bodyBytes),
-        );
-        _allEmployees = decoded.map((e) => Employee.fromJson(e)).toList();
+        final String jsonString = utf8.decode(response.bodyBytes);
 
-        _unidadesDisponibles.clear();
-        _estadosDisponibles.clear();
-        for (var emp in _allEmployees) {
-          _unidadesDisponibles.add(emp.unidad); // <-- Volvemos a la normalidad
-          _estadosDisponibles.add(emp.estadoActual);
-        }
+        // 3. Guardamos los nuevos datos en el disco duro para la próxima vez
+        await prefs.setString('personal_cache', jsonString);
 
-        _applyFilters();
-      } else {
-        print('Error Fetch: ${response.statusCode}');
+        // 4. Actualizamos las variables con los datos frescos
+        _allEmployees = await compute(parseEmployeesInBackground, jsonString);
+        _actualizarListasSecundarias();
+
+        // Al notificar, la pantalla se actualiza sola sin que el usuario note esperas
+        _isLoading = false;
+        notifyListeners();
       }
     } catch (e) {
       print('Error Conexión Fetch: $e');
-    } finally {
       _isLoading = false;
-      notifyListeners();
+      notifyListeners(); // Apagamos la ruedita por si falló el internet
     }
+  }
+
+  // Pequeña función auxiliar para no repetir código
+  void _actualizarListasSecundarias() {
+    _unidadesDisponibles.clear();
+    _estadosDisponibles.clear();
+    for (var emp in _allEmployees) {
+      _unidadesDisponibles.add(emp.unidad);
+      _estadosDisponibles.add(emp.estadoActual);
+    }
+    _applyFilters();
   }
 
   // =====================================
@@ -297,4 +323,11 @@ class EmployeeProvider extends ChangeNotifier {
     _reportData = [];
     notifyListeners();
   }
+}
+
+// Esta función va AFUERA de la clase, al final del archivo
+List<Employee> parseEmployeesInBackground(String responseBody) {
+  // Traduce el texto gigante a una lista de Empleados sin congelar la app
+  final List<dynamic> decoded = json.decode(responseBody);
+  return decoded.map((e) => Employee.fromJson(e)).toList();
 }
