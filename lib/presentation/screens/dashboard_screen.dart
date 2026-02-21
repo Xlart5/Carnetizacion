@@ -34,7 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       key: _scaffoldKey, // <--- VINCULAMOS LA CLAVE AQUÍ
       backgroundColor: AppColors.background,
-      
+
       // AGREGAMOS EL MENÚ LATERAL
       drawer: const SideMenu(),
 
@@ -51,11 +51,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text("CONTROL CENTRAL", style: TextStyle(letterSpacing: 2, fontSize: 12, color: AppColors.textGrey, fontWeight: FontWeight.w600)),
-                    Text("Panel de Administración", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
+                    Text(
+                      "CONTROL CENTRAL",
+                      style: TextStyle(
+                        letterSpacing: 2,
+                        fontSize: 12,
+                        color: AppColors.textGrey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      "Panel de Administración",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
                   ],
                 ),
-                
+
                 // ZONA DERECHA: Notificaciones + Botón Admin
                 Row(
                   children: [
@@ -65,11 +80,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.notifications_none, color: AppColors.primaryDark),
+                      child: const Icon(
+                        Icons.notifications_none,
+                        color: AppColors.primaryDark,
+                      ),
                     ),
-                    
+
                     const SizedBox(width: 20),
 
                     // BOTÓN ADMINISTRADOR (ESTILO PERSONALIZADO)
@@ -82,11 +106,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                         borderRadius: BorderRadius.circular(30),
                         child: Container(
-                          padding: const EdgeInsets.only(left: 6, top: 6, bottom: 6, right: 20),
+                          padding: const EdgeInsets.only(
+                            left: 6,
+                            top: 6,
+                            bottom: 6,
+                            right: 20,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(30),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Row(
                             children: [
@@ -94,16 +129,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1A1F24), // Negro/Gris oscuro
+                                  color: const Color(
+                                    0xFF1A1F24,
+                                  ), // Negro/Gris oscuro
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.person_outline, color: Colors.white, size: 20),
+                                child: const Icon(
+                                  Icons.person_outline,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               // Texto
                               const Text(
-                                "Administrador", 
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryDark)
+                                "Administrador",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: AppColors.primaryDark,
+                                ),
                               ),
                             ],
                           ),
@@ -114,18 +159,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 30),
-            
+
             // --- 2. TARJETAS KPI ---
             Row(
               children: [
-                KPICard(title: "TOTAL", value: provider.totalEmployees.toString(), subtitle: "Empleados registrados", icon: Icons.people_alt_outlined, badgeText: "TOTAL"),
-                KPICard(title: "ÉXITO", value: provider.printedCredentials.toString(), subtitle: "Credenciales Impresas", icon: Icons.print_outlined, isDark: true, badgeText: "IMPRESOS"),
-                KPICard(title: "REVISIÓN", value: provider.pendingRequests.toString(), subtitle: "Solicitudes pendientes", icon: Icons.assignment_late_outlined, badgeText: "PENDIENTES"),
+                KPICard(
+                  title: "TOTAL",
+                  value: provider.totalEmployees.toString(),
+                  subtitle: "Empleados registrados",
+                  icon: Icons.people_alt_outlined,
+                  badgeText: "TOTAL",
+                ),
+                KPICard(
+                  title: "ÉXITO",
+                  value: provider.printedCredentials.toString(),
+                  subtitle: "Credenciales Impresas",
+                  icon: Icons.print_outlined,
+                  isDark: true,
+                  badgeText: "IMPRESOS",
+                ),
+                KPICard(
+                  title: "REVISIÓN",
+                  value: provider.pendingRequests.toString(),
+                  subtitle: "Solicitudes pendientes",
+                  icon: Icons.assignment_late_outlined,
+                  badgeText: "PENDIENTES",
+                ),
               ],
             ),
-            
+
             // --- 3. TABLA DE DATOS ---
             Expanded(
               child: Row(
@@ -135,12 +199,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(top: 20),
-                      child: SingleChildScrollView(child: EmployeesTable()), 
+                      child: SingleChildScrollView(child: EmployeesTable()),
                     ),
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

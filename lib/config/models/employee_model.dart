@@ -57,7 +57,7 @@ class Employee {
       apellidoPaterno: json['apellidoPaterno'] ?? '',
       apellidoMaterno: json['apellidoMaterno'] ?? '',
       carnetIdentidad: json['carnetIdentidad'] ?? '',
-      correo: json['correo'],
+      correo: json['correo'] ?? 'sin correo',
       celular: json['celular'] ?? '',
       accesoComputo: json['accesoComputo'] ?? false,
       estadoActual: json['estadoActual'] ?? 'DESCONOCIDO',

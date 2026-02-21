@@ -29,15 +29,23 @@ class UnidadesProvider extends ChangeNotifier {
       // 1. Traer Unidades
       final resUnidades = await http.get(Uri.parse('$_baseUrl/api/unidades'));
       if (resUnidades.statusCode == 200) {
-        final List<dynamic> unData = json.decode(utf8.decode(resUnidades.bodyBytes));
+        final List<dynamic> unData = json.decode(
+          utf8.decode(resUnidades.bodyBytes),
+        );
         _unidades = unData.map((e) => UnidadModel.fromJson(e)).toList();
       }
 
       // 2. Traer Cargos
-      final resCargos = await http.get(Uri.parse('$_baseUrl/api/cargos-proceso'));
+      final resCargos = await http.get(
+        Uri.parse('$_baseUrl/api/cargos-proceso'),
+      );
       if (resCargos.statusCode == 200) {
-        final List<dynamic> carData = json.decode(utf8.decode(resCargos.bodyBytes));
-        _todosLosCargos = carData.map((e) => CargoUnidadModel.fromJson(e)).toList();
+        final List<dynamic> carData = json.decode(
+          utf8.decode(resCargos.bodyBytes),
+        );
+        _todosLosCargos = carData
+            .map((e) => CargoUnidadModel.fromJson(e))
+            .toList();
       }
     } catch (e) {
       print('Error cargando gestión de unidades: $e');

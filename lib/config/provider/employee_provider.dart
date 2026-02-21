@@ -178,15 +178,18 @@ class EmployeeProvider extends ChangeNotifier {
   Future<bool> markAsPrinted(Employee emp) async {
     try {
       // 1. Armamos la URL con el ID del empleado
-      final url = Uri.parse('$_baseUrl/api/estados-personal/${emp.id}/imprimir-credencial');
-      
+      final url = Uri.parse(
+        '$_baseUrl/api/estados-personal/${emp.id}/imprimir-credencial',
+      );
+
       // 2. Hacemos la petición PUT al servidor
       final response = await http.put(
         url,
         headers: {
           'Accept': 'application/json',
-          // 'ngrok-skip-browser-warning': 'true' // Descomenta esto si vuelve a molestar el CORS
-        }
+          'ngrok-skip-browser-warning':
+              'true', // Descomenta esto si vuelve a molestar el CORS
+        },
       );
 
       // 3. Si el servidor responde OK (200), actualizamos la pantalla
@@ -194,7 +197,9 @@ class EmployeeProvider extends ChangeNotifier {
         final index = _allEmployees.indexWhere((e) => e.id == emp.id);
         if (index != -1) {
           // Usamos copyWith para mantener todos sus datos y solo cambiar su estado visualmente
-          _allEmployees[index] = emp.copyWith(estadoActual: "CREDENCIAL IMPRESO");
+          _allEmployees[index] = emp.copyWith(
+            estadoActual: "CREDENCIAL IMPRESO",
+          );
           _applyFilters();
         }
         return true; // Éxito
@@ -220,27 +225,26 @@ class EmployeeProvider extends ChangeNotifier {
       _applyFilters(); // Refresca la tabla al instante
     }
   }
+
   // =====================================
   // ELIMINAR EMPLEADO (DELETE)
   // =====================================
   Future<bool> deleteEmployee(int id) async {
     try {
       final url = Uri.parse('$_baseUrl/api/personal/$id');
-      
+
       final response = await http.delete(
         url,
-        headers: {
-          'Accept': 'application/json',
-        }
+        headers: {'Accept': 'application/json'},
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         // Lo borramos de la lista principal
         _allEmployees.removeWhere((emp) => emp.id == id);
-        
+
         // Refrescamos los filtros y la tabla
         _applyFilters();
-        return true; 
+        return true;
       } else {
         print('Error al eliminar: ${response.statusCode}');
         return false;

@@ -54,19 +54,26 @@ class EmployeeDataSource extends DataTableSource {
 
       cells: [
         // 1. FOTO OPTIMIZADA
+        // 1. FOTO (Solo Inicial, CERO consumo de internet)
         DataCell(
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: Colors.grey[200],
-              // 🔥 MAGIA: Usamos CachedNetworkImageProvider
-              backgroundImage: emp.photoUrl.isNotEmpty
-                  ? CachedNetworkImageProvider(emp.photoUrl) as ImageProvider
-                  : null,
-              child: emp.photoUrl.isEmpty
-                  ? const Icon(Icons.person, size: 20, color: Colors.grey)
-                  : null,
+              backgroundColor: AppColors.primaryDark.withOpacity(
+                0.1,
+              ), // Un fondo suave con tu color principal
+              child: Text(
+                // Sacamos la primera letra del nombre y la ponemos en mayúscula
+                emp.nombreCompleto.isNotEmpty
+                    ? emp.nombreCompleto.substring(0, 1).toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                  color: AppColors.primaryDark,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
         ),
