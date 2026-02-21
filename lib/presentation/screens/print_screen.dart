@@ -2,21 +2,30 @@ import 'package:carnetizacion/config/provider/employee_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/printing.dart'; // Asegúrate de tener este import
+import 'package:printing/printing.dart'; 
 import 'package:pdf/pdf.dart';
 
 import '../../config/theme/app_colors.dart';
 import '../../config/helpers/pdf_generator_service.dart';
-import '../../config/models/employee_model.dart'; // Importante para el tipo Employee
+import '../../config/models/employee_model.dart'; 
 import '../widgets/credential_card.dart';
 
-class PrintScreen extends StatelessWidget {
+// 1. CAMBIAMOS A STATEFUL WIDGET
+class PrintScreen extends StatefulWidget {
   const PrintScreen({super.key});
+
+  @override
+  State<PrintScreen> createState() => _PrintScreenState();
+}
+
+class _PrintScreenState extends State<PrintScreen> {
+  
+  // 2. VARIABLE CERRADURA: Bloqueará el botón mientras trabaje
+  bool _isPrinting = false;
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EmployeeProvider>();
-    // Obtenemos solo los pendientes
     final pendingList = provider.pendingPrintingEmployees;
 
     return Scaffold(
@@ -53,72 +62,82 @@ class PrintScreen extends StatelessWidget {
                 ),
                 const Spacer(),
 
-                // BOTÓN IMPRIMIR
+                // 3. BOTÓN IMPRIMIR PROTEGIDO
                 ElevatedButton.icon(
-                  onPressed: pendingList.isEmpty
+                  // Desactivamos el botón si no hay datos o si ya está imprimiendo
+                  onPressed: (pendingList.isEmpty || _isPrinting)
                       ? null
                       : () async {
-                          // 1. Notificar al usuario
+                          // A. Encendemos el bloqueo
+                          setState(() {
+                            _isPrinting = true; 
+                          });
+
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Generando PDF...")),
+                            const SnackBar(
+                              content: Text("Preparando imágenes en segundo plano... Por favor espere."),
+                              backgroundColor: Colors.blue,
+                              duration: Duration(seconds: 3),
+                            ),
                           );
 
                           try {
-                            // 2. Generar el PDF
-                            final pdfBytes =
-                                await PdfGeneratorService.generateCredentialsPdf(
-                                  pendingList,
-                                );
+                            // B. El PDF se genera en el Sótano sin congelar la pantalla
+                            final pdfBytes = await PdfGeneratorService.generateCredentialsPdf(pendingList);
 
-                            // 3. Abrir la vista previa de impresión
+                            // C. Abre la vista de Chrome
                             await Printing.layoutPdf(
-                              onLayout: (PdfPageFormat format) async =>
-                                  pdfBytes,
-                              name:
-                                  'Credenciales_Lote_${DateTime.now().millisecond}',
+                              onLayout: (PdfPageFormat format) async => pdfBytes,
+                              name: 'Credenciales_Lote_${DateTime.now().millisecond}',
                             );
 
-                            // 4. ACTUALIZAR ESTADO EN BD
-                            // Hacemos una copia de la lista porque al actualizar se borrarán de 'pendingList'
-                            final listToUpdate = List<Employee>.from(
-                              pendingList,
-                            );
-                            final readProvider = context
-                                .read<EmployeeProvider>();
+                            // D. Actualiza la Base de Datos
+                            final listToUpdate = List<Employee>.from(pendingList);
+                            final readProvider = context.read<EmployeeProvider>();
 
                             for (final emp in listToUpdate) {
-                              // Llamamos a la API para cada empleado impreso
                               await readProvider.markAsPrinted(emp);
                             }
 
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                    "¡Listo! Registros marcados como IMPRESOS.",
-                                  ),
+                                  content: Text("¡Listo! Registros marcados como IMPRESOS."),
                                   backgroundColor: Colors.green,
                                 ),
                               );
                             }
                           } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Error: $e"),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Error al generar: $e"),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } finally {
+                            // E. Pase lo que pase (Error o Éxito), quitamos el bloqueo
+                            if (context.mounted) {
+                              setState(() {
+                                _isPrinting = false;
+                              });
+                            }
                           }
                         },
-                  icon: const Icon(Icons.print, size: 18),
-                  label: const Text("Imprimir Lote"),
+                  // 4. CAMBIAMOS EL ÍCONO POR UNA RUEDITA SI ESTÁ TRABAJANDO
+                  icon: _isPrinting 
+                      ? const SizedBox(
+                          width: 18, 
+                          height: 18, 
+                          child: CircularProgressIndicator(color: AppColors.textDark, strokeWidth: 2)
+                        )
+                      : const Icon(Icons.print, size: 18),
+                  label: Text(_isPrinting ? "Procesando..." : "Imprimir Lote"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryYellow,
                     foregroundColor: AppColors.textDark,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 30,
-                      vertical: 18,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 18),
                   ),
                 ),
               ],
@@ -134,13 +153,12 @@ class PrintScreen extends StatelessWidget {
                 : Padding(
                     padding: const EdgeInsets.all(40.0),
                     child: GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 400,
-                            mainAxisExtent: 250,
-                            crossAxisSpacing: 30,
-                            mainAxisSpacing: 30,
-                          ),
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 400,
+                        mainAxisExtent: 250,
+                        crossAxisSpacing: 30,
+                        mainAxisSpacing: 30,
+                      ),
                       itemCount: pendingList.length,
                       itemBuilder: (context, index) {
                         final emp = pendingList[index];

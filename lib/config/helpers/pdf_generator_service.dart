@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart'; // 🔥 OBLIGATORIO PARA EL COMPUTE
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -6,95 +7,99 @@ import 'package:http/http.dart' as http;
 import '../models/employee_model.dart';
 
 class PdfGeneratorService {
-  // MEDIDAS ORIGINALES QUE FUNCIONARON PARA TI
   static const double cardWidth = 270.0;
   static const double cardHeight = 171.0;
 
-  static Future<Uint8List> generateCredentialsPdf(
-    List<Employee> employees,
-  ) async {
+  // ==========================================
+  // 1. EL JEFE (Se ejecuta en la pantalla principal)
+  // ==========================================
+  static Future<Uint8List> generateCredentialsPdf(List<Employee> employees) async {
+    // Leemos los archivos de la carpeta assets aquí, porque el "sótano" (Isolate)
+    // no tiene acceso a las carpetas del sistema.
+    final frontData = await rootBundle.load('assets/images/card_template_front.png');
+    final backData = await rootBundle.load('assets/images/ATRAS_EVENTUAL_2025.png');
+    final tedData = await rootBundle.load('assets/images/logo_ted.png');
+    final elecData = await rootBundle.load('assets/images/logo_elecciones.png');
+
+    // Metemos los bytes puros y los empleados en un Map (Una caja)
+    final Map<String, dynamic> dataAEnviar = {
+      'employees': employees,
+      'frontBytes': frontData.buffer.asUint8List(),
+      'backBytes': backData.buffer.asUint8List(),
+      'tedBytes': tedData.buffer.asUint8List(),
+      'elecBytes': elecData.buffer.asUint8List(),
+    };
+
+    // Mandamos todo al procesador secundario con compute
+    return await compute(_generarPdfEnSotano, dataAEnviar);
+  }
+
+  // ==========================================
+  // 2. EL SÓTANO (Trabaja en segundo plano sin congelar)
+  // ==========================================
+  static Future<Uint8List> _generarPdfEnSotano(Map<String, dynamic> data) async {
+    // 1. Desempacamos la caja
+    final employees = data['employees'] as List<Employee>;
+    
+    // 2. Reconstruimos las imágenes en la memoria del sótano
+    final templateFront = pw.MemoryImage(data['frontBytes']);
+    final templateBack = pw.MemoryImage(data['backBytes']);
+    final logoTed = pw.MemoryImage(data['tedBytes']);
+    final logoElecciones = pw.MemoryImage(data['elecBytes']);
+
     final pdf = pw.Document();
-
-    // 1. CARGAR ASSETS
-    final templateFront = await _loadAsset(
-      'assets/images/card_template_front.png',
-    );
-    final templateBack = await _loadAsset(
-      'assets/images/ATRAS_EVENTUAL_2025.png',
-    );
-    final logoTed = await _loadAsset('assets/images/logo_ted.png');
-    final logoElecciones = await _loadAsset(
-      'assets/images/logo_elecciones.png',
-    );
-    final qrPlaceholder = await _loadAsset('assets/images/qr_placeholder.png');
-
-    // A4 Vertical
     final pageFormat = PdfPageFormat.a4;
-
-    // --- 10 POR PÁGINA (2 Col x 5 Filas) ---
     const int itemsPerPage = 10;
 
     for (var i = 0; i < employees.length; i += itemsPerPage) {
-      // Obtenemos el grupo de datos real
       final chunk = employees.sublist(
         i,
-        (i + itemsPerPage) < employees.length
-            ? i + itemsPerPage
-            : employees.length,
+        (i + itemsPerPage) < employees.length ? i + itemsPerPage : employees.length,
       );
-      final List<pw.ImageProvider> qrs = await Future.wait(
-        chunk.map((emp) async {
-          if (emp.qrUrl.isEmpty) return logoTed;
-          try {
-            final response = await http.get(Uri.parse(emp.qrUrl));
-            if (response.statusCode == 200) {
-              return pw.MemoryImage(response.bodyBytes);
-            }
-          } catch (e) {}
-          return logoTed;
-        }),
-      );
-      // Descargar fotos reales
-      final List<pw.ImageProvider> photos = await Future.wait(
-        chunk.map((emp) async {
-          if (emp.photoUrl.isEmpty) return logoTed;
-          try {
-            final response = await http.get(Uri.parse(emp.photoUrl));
-            if (response.statusCode == 200) {
-              return pw.MemoryImage(response.bodyBytes);
-            }
-          } catch (e) {}
-          return logoTed;
-        }),
-      );
+
+      // --- 🚀 MEGA OPTIMIZACIÓN DE DESCARGAS ---
+      // Disparamos QRs y Fotos al mismo tiempo
+      final qrsFuture = Future.wait(chunk.map((emp) async {
+        if (emp.qrUrl.isEmpty) return logoTed;
+        try {
+          final res = await http.get(Uri.parse(emp.qrUrl));
+          if (res.statusCode == 200) return pw.MemoryImage(res.bodyBytes);
+        } catch (_) {}
+        return logoTed;
+      }));
+
+      final photosFuture = Future.wait(chunk.map((emp) async {
+        if (emp.photoUrl.isEmpty) return logoTed;
+        try {
+          final res = await http.get(Uri.parse(emp.photoUrl));
+          if (res.statusCode == 200) return pw.MemoryImage(res.bodyBytes);
+        } catch (_) {}
+        return logoTed;
+      }));
+
+      // Esperamos a que ambas listas terminen simultáneamente
+      final results = await Future.wait([qrsFuture, photosFuture]);
+      final List<pw.ImageProvider> qrs = results[0];
+      final List<pw.ImageProvider> photos = results[1];
 
       // --- PÁGINA 1: FRENTE ---
       pdf.addPage(
         pw.Page(
           pageFormat: pageFormat,
-          // Reduje márgenes verticales para asegurar que entren las 5 filas (10 carnets)
           margin: const pw.EdgeInsets.symmetric(vertical: 15, horizontal: 20),
           build: (pw.Context context) {
             return pw.GridView(
               crossAxisCount: 2,
               childAspectRatio: cardWidth / cardHeight,
               crossAxisSpacing: 10,
-              mainAxisSpacing:
-                  5, // Espacio vertical mínimo para que entren 5 filas
-              // TRUCO: Generamos SIEMPRE 10 items. Si no hay datos, ponemos caja invisible.
+              mainAxisSpacing: 5,
               children: List.generate(itemsPerPage, (index) {
                 if (index < chunk.length) {
-                  // Tarjeta Real
                   return _buildFrontCard(
-                    chunk[index],
-                    photos[index],
-                    templateFront,
-                    logoTed,
-                    logoElecciones,
-                    qrs[index],
+                    chunk[index], photos[index], templateFront,
+                    logoTed, logoElecciones, qrs[index] // Pásale tu lógica de QR
                   );
                 } else {
-                  // Tarjeta Invisible (Mantiene el tamaño de la grilla fijo)
                   return pw.SizedBox(width: cardWidth, height: cardHeight);
                 }
               }),
@@ -109,13 +114,11 @@ class PdfGeneratorService {
           pageFormat: pageFormat,
           margin: const pw.EdgeInsets.symmetric(vertical: 15, horizontal: 20),
           build: (pw.Context context) {
-            // Lógica Espejo
             final List<int?> mirrorIndexes = List.filled(itemsPerPage, null);
             for (int j = 0; j < chunk.length; j++) {
               final int row = j ~/ 2;
               final int col = j % 2;
               final int mirrorCol = (col == 0) ? 1 : 0;
-
               final int newIndex = (row * 2) + mirrorCol;
               if (newIndex < itemsPerPage) mirrorIndexes[newIndex] = j;
             }
@@ -125,13 +128,10 @@ class PdfGeneratorService {
               childAspectRatio: cardWidth / cardHeight,
               crossAxisSpacing: 10,
               mainAxisSpacing: 5,
-              // TRUCO: También generamos siempre 10 items
               children: List.generate(itemsPerPage, (index) {
                 if (mirrorIndexes[index] != null) {
-                  // Reverso Real
                   return _buildBackCard(templateBack);
                 } else {
-                  // Reverso Invisible (Mantiene alineación)
                   return pw.SizedBox(width: cardWidth, height: cardHeight);
                 }
               }),
@@ -143,6 +143,11 @@ class PdfGeneratorService {
 
     return pdf.save();
   }
+
+  // 👇 MANTÉN TUS DISEÑOS EXACTAMENTE IGUAL AQUÍ 👇
+  // static pw.Widget _buildFrontCard(...) { ... }
+  // static pw.Widget _buildBackCard(...) { ... }
+
 
   static Future<pw.MemoryImage> _loadAsset(String path) async {
     try {

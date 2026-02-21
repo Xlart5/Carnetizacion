@@ -26,6 +26,8 @@ class EmployeeProvider extends ChangeNotifier {
   // =====================================
   // GETTERS GENERALES
   // =====================================
+  List<Employee> get allEmployees => _allEmployees;
+  String get searchQuery => _searchQuery;
   List<Employee> get employees => _filteredEmployees;
   bool get isLoading => _isLoading;
   Set<String> get unidadesDisponibles => _unidadesDisponibles;
