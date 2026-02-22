@@ -53702,16 +53702,16 @@ gaJs(){return J.kG(this.b,new A.agk()).gq(0)},
 gaJr(){var s=J.kG(this.b,new A.agj())
 s=A.N(s,s.$ti.i("n.E"))
 return s},
-q6(){var s=0,r=A.J(t.H),q=1,p=[],o=this,n,m,l,k,j,i,h,g,f
+q6(){var s=0,r=A.J(t.H),q=1,p=[],o=this,n,m,l,k,j,i,h,g
 var $async$q6=A.F(function(a,b){if(a===1){p.push(b)
 s=q}for(;;)switch(s){case 0:s=2
 return A.D(A.YU(),$async$q6)
-case 2:h=b
-g=A.c_(h.a.h(0,"personal_cache"))
-s=g!=null&&g.length!==0?3:5
+case 2:i=b
+h=A.c_(i.a.h(0,"personal_cache"))
+s=h!=null&&h.length!==0?3:5
 break
 case 3:s=6
-return A.D(A.xb(A.b2k(),g,null,t.N,t.gX),$async$q6)
+return A.D(A.xb(A.b2k(),h,null,t.N,t.gX),$async$q6)
 case 6:o.b=b
 o.V_()
 o.d=!1
@@ -53722,17 +53722,16 @@ case 5:o.d=!0
 o.aq()
 case 4:q=8
 n=A.cO("https://annamarie-chlorophyllous-arianna.ngrok-free.dev/api/personal/detalles",0,null)
-j=t.N
 s=11
-return A.D(A.xd(n,A.ab(["Accept","application/json"],j,j)),$async$q6)
+return A.D(A.xd(n,null),$async$q6)
 case 11:m=b
 s=m.b===200?12:13
 break
 case 12:l=B.ax.cO(m.w)
 s=14
-return A.D(h.Nf("String","personal_cache",l),$async$q6)
+return A.D(i.Nf("String","personal_cache",l),$async$q6)
 case 14:s=15
-return A.D(A.xb(A.b2k(),l,null,j,t.gX),$async$q6)
+return A.D(A.xb(A.b2k(),l,null,t.N,t.gX),$async$q6)
 case 15:o.b=b
 o.V_()
 o.d=!1
@@ -53741,8 +53740,8 @@ case 13:q=1
 s=10
 break
 case 8:q=7
-f=p.pop()
-k=A.a9(f)
+g=p.pop()
+k=A.a9(g)
 A.ep("Error Conexi\xf3n Fetch: "+A.k(k))
 o.d=!1
 o.aq()
@@ -53771,7 +53770,7 @@ s=p}for(;;)switch(s){case 0:p=4
 m=A.cO("https://annamarie-chlorophyllous-arianna.ngrok-free.dev/api/estados-personal/"+a.a+"/imprimir-credencial",0,null)
 i=t.N
 s=7
-return A.D(A.blx(m,A.ab(["Accept","application/json","ngrok-skip-browser-warning","true"],i,i)),$async$Av)
+return A.D(A.blx(m,A.ab(["Accept","application/json"],i,i)),$async$Av)
 case 7:l=c
 if(l.b===200||l.b===201){k=J.aVc(n.b,new A.agi(a))
 if(!J.d(k,-1)){J.by(n.b,k,a.aBT("CREDENCIAL IMPRESO"))
