@@ -2,15 +2,14 @@ import 'package:carnetizacion/config/provider/employee_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/printing.dart'; 
+import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 
 import '../../config/theme/app_colors.dart';
 import '../../config/helpers/pdf_generator_service.dart';
-import '../../config/models/employee_model.dart'; 
+import '../../config/models/employee_model.dart';
 import '../widgets/credential_card.dart';
 
-// 1. CAMBIAMOS A STATEFUL WIDGET
 class PrintScreen extends StatefulWidget {
   const PrintScreen({super.key});
 
@@ -19,20 +18,23 @@ class PrintScreen extends StatefulWidget {
 }
 
 class _PrintScreenState extends State<PrintScreen> {
-  
-  // 2. VARIABLE CERRADURA: Bloqueará el botón mientras trabaje
-  bool _isPrinting = false;
+  // Variables independientes para no bloquear ambos botones a la vez
+  bool _isGeneratingPdf = false;
+  bool _isUpdatingDatabase = false;
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EmployeeProvider>();
     final pendingList = provider.pendingPrintingEmployees;
 
+    // Tomamos máximo 100 credenciales
+    final batchToPrint = pendingList.take(100).toList();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // HEADER
+          // HEADER CON LOS DOS BOTONES
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
@@ -43,101 +45,142 @@ class _PrintScreenState extends State<PrintScreen> {
                   onPressed: () => context.go('/'),
                 ),
                 const SizedBox(width: 20),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Impresión de Credenciales",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryDark,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Impresión de Credenciales",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
-                    ),
-                    Text(
-                      "Revisión final de ${pendingList.length} credenciales pendientes.",
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                  ],
+                      Text(
+                        pendingList.length > 100
+                            ? "Hay ${pendingList.length} pendientes. Mostrando el Lote Actual (100 credenciales)."
+                            : "Revisión final de ${pendingList.length} credenciales pendientes.",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const Spacer(),
 
-                // 3. BOTÓN IMPRIMIR PROTEGIDO
+                // ==========================================
+                // BOTÓN 1: SOLO GENERAR PDF
+                // ==========================================
                 ElevatedButton.icon(
-                  // Desactivamos el botón si no hay datos o si ya está imprimiendo
-                  onPressed: (pendingList.isEmpty || _isPrinting)
+                  onPressed:
+                      (batchToPrint.isEmpty ||
+                          _isGeneratingPdf ||
+                          _isUpdatingDatabase)
                       ? null
                       : () async {
-                          // A. Encendemos el bloqueo
                           setState(() {
-                            _isPrinting = true; 
+                            _isGeneratingPdf = true;
                           });
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text("Preparando imágenes en segundo plano... Por favor espere."),
+                              content: Text(
+                                "Generando PDF para revisión... No cierre esta pantalla.",
+                              ),
                               backgroundColor: Colors.blue,
                               duration: Duration(seconds: 3),
                             ),
                           );
 
                           try {
-                            // B. El PDF se genera en el Sótano sin congelar la pantalla
-                            final pdfBytes = await PdfGeneratorService.generateCredentialsPdf(pendingList);
+                            // SOLO generamos y mostramos. Cero base de datos.
+                            final pdfBytes =
+                                await PdfGeneratorService.generateCredentialsPdf(
+                                  batchToPrint,
+                                );
 
-                            // C. Abre la vista de Chrome
                             await Printing.layoutPdf(
-                              onLayout: (PdfPageFormat format) async => pdfBytes,
-                              name: 'Credenciales_Lote_${DateTime.now().millisecond}',
+                              onLayout: (PdfPageFormat format) async =>
+                                  pdfBytes,
+                              name:
+                                  'Credenciales_Lote_${DateTime.now().millisecond}',
                             );
-
-                            // D. Actualiza la Base de Datos
-                            final listToUpdate = List<Employee>.from(pendingList);
-                            final readProvider = context.read<EmployeeProvider>();
-
-                            for (final emp in listToUpdate) {
-                              await readProvider.markAsPrinted(emp);
-                            }
-
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("¡Listo! Registros marcados como IMPRESOS."),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text("Error al generar: $e"),
+                                  content: Text("Error al generar PDF: $e"),
                                   backgroundColor: Colors.red,
                                 ),
                               );
                             }
                           } finally {
-                            // E. Pase lo que pase (Error o Éxito), quitamos el bloqueo
                             if (context.mounted) {
                               setState(() {
-                                _isPrinting = false;
+                                _isGeneratingPdf = false;
                               });
                             }
                           }
                         },
-                  // 4. CAMBIAMOS EL ÍCONO POR UNA RUEDITA SI ESTÁ TRABAJANDO
-                  icon: _isPrinting 
+                  icon: _isGeneratingPdf
                       ? const SizedBox(
-                          width: 18, 
-                          height: 18, 
-                          child: CircularProgressIndicator(color: AppColors.textDark, strokeWidth: 2)
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            color: AppColors.textDark,
+                            strokeWidth: 2,
+                          ),
                         )
-                      : const Icon(Icons.print, size: 18),
-                  label: Text(_isPrinting ? "Procesando..." : "Imprimir Lote"),
+                      : const Icon(Icons.picture_as_pdf, size: 18),
+                  label: Text(
+                    _isGeneratingPdf
+                        ? "Procesando..."
+                        : "1. Ver PDF (${batchToPrint.length})",
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryYellow,
                     foregroundColor: AppColors.textDark,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 18),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 15), // Separación entre botones
+                // ==========================================
+                // BOTÓN 2: CONFIRMAR IMPRESIÓN (BASE DE DATOS)
+                // ==========================================
+                ElevatedButton.icon(
+                  onPressed:
+                      (batchToPrint.isEmpty ||
+                          _isGeneratingPdf ||
+                          _isUpdatingDatabase)
+                      ? null
+                      : () =>
+                            _mostrarDialogoConfirmacion(context, batchToPrint),
+                  icon: _isUpdatingDatabase
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.check_circle_outline, size: 18),
+                  label: Text(
+                    _isUpdatingDatabase ? "Guardando..." : "2. Confirmar Lote",
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.successGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
                   ),
                 ),
               ],
@@ -146,22 +189,23 @@ class _PrintScreenState extends State<PrintScreen> {
 
           // GRID DE CREDENCIALES
           Expanded(
-            child: pendingList.isEmpty
+            child: batchToPrint.isEmpty
                 ? const Center(
                     child: Text("No hay credenciales pendientes de impresión."),
                   )
                 : Padding(
                     padding: const EdgeInsets.all(40.0),
                     child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 400,
-                        mainAxisExtent: 250,
-                        crossAxisSpacing: 30,
-                        mainAxisSpacing: 30,
-                      ),
-                      itemCount: pendingList.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 400,
+                            mainAxisExtent: 250,
+                            crossAxisSpacing: 30,
+                            mainAxisSpacing: 30,
+                          ),
+                      itemCount: batchToPrint.length,
                       itemBuilder: (context, index) {
-                        final emp = pendingList[index];
+                        final emp = batchToPrint[index];
                         return Column(
                           children: [
                             Expanded(child: CredentialCard(employee: emp)),
@@ -182,6 +226,97 @@ class _PrintScreenState extends State<PrintScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // ==========================================
+  // DIÁLOGO DE SEGURIDAD PARA EL BOTÓN 2
+  // ==========================================
+  void _mostrarDialogoConfirmacion(BuildContext context, List<Employee> batch) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Evita cerrar si se hace clic afuera
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+              SizedBox(width: 10),
+              Text("Confirmar Impresión"),
+            ],
+          ),
+          content: Text(
+            "¿Estás seguro de que este lote de ${batch.length} credenciales se imprimió correctamente en papel?\n\nAl confirmar, desaparecerán de esta lista y se cargará el siguiente lote.",
+            style: const TextStyle(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(ctx).pop(), // Cierra el diálogo sin hacer nada
+              child: const Text(
+                "Aún no, cancelar",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.successGreen,
+              ),
+              onPressed: () async {
+                Navigator.of(ctx).pop(); // Cerramos el diálogo
+
+                // Activamos el icono de carga en el botón Verde
+                setState(() {
+                  _isUpdatingDatabase = true;
+                });
+
+                try {
+                  final listToUpdate = List<Employee>.from(batch);
+                  final readProvider = context.read<EmployeeProvider>();
+
+                  // Actualizamos a todos en la Base de Datos
+                  for (final emp in listToUpdate) {
+                    await readProvider.markAsPrinted(emp);
+                  }
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "¡Éxito! Base de datos actualizada. Cargando nuevo lote...",
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Error al actualizar BD: $e"),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (context.mounted) {
+                    setState(() {
+                      _isUpdatingDatabase = false;
+                    });
+                  }
+                }
+              },
+              child: const Text(
+                "Sí, confirmar Lote",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

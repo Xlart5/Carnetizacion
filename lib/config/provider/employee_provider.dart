@@ -93,10 +93,7 @@ class EmployeeProvider extends ChangeNotifier {
     // 2. AHORA VAMOS A INTERNET EN SILENCIO (Modo Fantasma)
     try {
       final url = Uri.parse('$_baseUrl/api/personal/detalles');
-      final response = await http.get(
-        url,
-        headers: {'Accept': 'application/json'},
-      );
+      final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final String jsonString = utf8.decode(response.bodyBytes);
@@ -215,8 +212,7 @@ class EmployeeProvider extends ChangeNotifier {
         url,
         headers: {
           'Accept': 'application/json',
-          'ngrok-skip-browser-warning':
-              'true', // Descomenta esto si vuelve a molestar el CORS
+          // Descomenta esto si vuelve a molestar el CORS
         },
       );
 
